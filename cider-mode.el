@@ -479,6 +479,17 @@ higher precedence."
   :group 'cider
   :version '(cider . "1.2.0"))
 
+(defun cider-edit-doc-string ()
+  "Edit the doc string at point."
+  (interactive)
+  (let ((string (cider-string-at-point)))
+    (when string
+      (with-current-buffer (get-buffer-create "*cider-edit*")
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert (replace-regexp-in-string "[\\\"]" "\"" string))
+          (pop-to-buffer (current-buffer)))))))
+
 (defconst cider-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-d") 'cider-doc-map)
@@ -492,6 +503,7 @@ higher precedence."
     (define-key map (kbd "C-c M-.") #'cider-find-resource)
     (define-key map (kbd "M-TAB") #'complete-symbol)
     (define-key map (kbd "C-M-x")   #'cider-eval-defun-at-point)
+    (define-key map (kbd "C-c '") #'cider-edit-doc-string)
     (define-key map (kbd "C-c C-c") #'cider-eval-defun-at-point)
     (define-key map (kbd "C-x C-e") #'cider-eval-last-sexp)
     (define-key map (kbd "C-c C-e") #'cider-eval-last-sexp)

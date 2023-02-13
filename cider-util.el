@@ -181,6 +181,16 @@ instead."
     (funcall (if bounds #'list #'buffer-substring-no-properties)
              (car b) (cdr b))))
 
+(defun cider-string-at-point ()
+  "Return the string at point, or nil when not inside a string."
+  (when (cider-in-string-p)
+    (let ((string-start (nth 8 (syntax-ppss))))
+      (save-excursion
+        (goto-char string-start)
+        (let ((start (point)))
+          (forward-sexp 1)
+          (buffer-substring start (point)))))))
+
 (defun cider-last-sexp (&optional bounds)
   "Return the sexp preceding the point.
 If BOUNDS is non-nil, return a list of its starting and ending position
