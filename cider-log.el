@@ -117,6 +117,7 @@
 
 (defun cider-sync-request:log-add-appender (framework appender)
   "Add the APPENDER to the log FRAMEWORK."
+  (cider-ensure-op-supported "log-add-appender")
   (thread-first `("op" "log-add-appender"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -124,6 +125,7 @@
 
 (defun cider-sync-request:log-clear (framework appender)
   "Clear the log events for FRAMEWORK and APPENDER."
+  (cider-ensure-op-supported "log-clear-appender")
   (thread-first `("op" "log-clear-appender"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -131,6 +133,7 @@
 
 (defun cider-sync-request:log-inspect-event (framework appender id)
   "Inspect the log event with the ID in the APPENDER of the log FRAMEWORK."
+  (cider-ensure-op-supported "log-inspect-event")
   (thread-first `("op" "log-inspect-event"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender)
@@ -140,6 +143,7 @@
 
 (defun cider-sync-request:log-frameworks ()
   "Return the available log frameworks."
+  (cider-ensure-op-supported "log-frameworks")
   (thread-first `("op" "log-frameworks")
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "frameworks")
@@ -155,6 +159,7 @@
   PATTERN - filter events whose message matches pattern
   START-TIME - filter events after the start time timestamp
   THREADS  - filter events after the start time timestamp"
+  (cider-ensure-op-supported "log-search")
   (thread-first `("op" "log-search"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender)
@@ -170,6 +175,7 @@
 
 (defun cider-sync-request:log-exceptions (framework appender)
   "Return the Cider log exceptions for FRAMEWORK and APPENDER."
+  (cider-ensure-op-supported "log-exceptions")
   (thread-first `("op" "log-exceptions"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -178,6 +184,7 @@
 
 (defun cider-sync-request:log-levels (framework appender)
   "Return the Cider log levels for FRAMEWORK and APPENDER."
+  (cider-ensure-op-supported "log-levels")
   (thread-first `("op" "log-levels"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -186,6 +193,7 @@
 
 (defun cider-sync-request:log-loggers (framework appender)
   "Return the Cider loggers for FRAMEWORK and APPENDER."
+  (cider-ensure-op-supported "log-loggers")
   (thread-first `("op" "log-loggers"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -194,6 +202,7 @@
 
 (defun cider-sync-request:log-remove-appender (framework appender)
   "Remove the APPENDER from the log FRAMEWORK."
+  (cider-ensure-op-supported "log-remove-appender")
   (thread-first `("op" "log-remove-appender"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -202,6 +211,7 @@
 
 (defun cider-sync-request:log-remove-consumer (framework appender consumer)
   "Remove the CONSUMER from the APPENDER of the log FRAMEWORK."
+  (cider-ensure-op-supported "log-remove-consumer")
   (thread-first `("op" "log-remove-consumer"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender)
@@ -210,7 +220,8 @@
                 (nrepl-dict-get "remove-consumer")))
 
 (defun cider-sync-request:log-threads (framework appender)
-  "Return the log exceptions for FRAMEWORK and APPENDER."
+  "Return the threads for FRAMEWORK and APPENDER."
+  (cider-ensure-op-supported "log-threads")
   (thread-first `("op" "log-threads"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
@@ -677,7 +688,7 @@
 ;;;###autoload
 (defun cider-log-appender-clear (framework appender)
   "Clear the log events of the APPENDER of FRAMEWORK."
-  (interactive)
+  (interactive (list cider-log-framework cider-log-appender))
   (let ((response (cider-sync-request:log-clear framework appender)))
     (nrepl-dbind-response response (status)
       (let ((framework-name (cider-log-framework-name framework))
