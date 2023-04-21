@@ -53,6 +53,9 @@
 (defvar cider-log-appender nil
   "The current log appender.")
 
+(defvar-local cider-log-consumer nil
+  "The current log consumer.")
+
 (defvar cider-log-exceptions nil
   "The list of exception names used to filter records.")
 
@@ -103,8 +106,9 @@
 
 ;; NREPL
 
-(defun cider-nrepl-add-consumer (framework appender consumer &optional callback)
+(defun cider-request:log-add-consumer (framework appender consumer &optional callback)
   "Add CONSUMER to the APPENDER of FRAMEWORK and call CALLBACK on log events."
+  (cider-ensure-op-supported "log-add-consumer")
   (thread-first `("op" "log-add-consumer"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender)
@@ -193,7 +197,8 @@
   (thread-first `("op" "log-remove-appender"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender))
-                (cider-nrepl-send-sync-request)))
+                (cider-nrepl-send-sync-request)
+                (nrepl-dict-get "remove-appender")))
 
 (defun cider-sync-request:log-remove-consumer (framework appender consumer)
   "Remove the CONSUMER from the APPENDER of the log FRAMEWORK."
@@ -201,7 +206,8 @@
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-name appender)
                   "consumer" ,consumer)
-                (cider-nrepl-send-sync-request)))
+                (cider-nrepl-send-sync-request)
+                (nrepl-dict-get "remove-consumer")))
 
 (defun cider-sync-request:log-threads (framework appender)
   "Return the log exceptions for FRAMEWORK and APPENDER."
@@ -446,6 +452,30 @@
   (interactive)
   (cider-log-next-line (- (or n 1))))
 
+(defun cider-log-resume ()
+  "Resume streaming log events to the client."
+  (interactive)
+  (with-current-buffer (get-buffer-create cider-log-buffer-name)
+    (when (and cider-log-framework cider-log-appender)
+      (setq cider-log-consumer cider-log-buffer-name)
+      (cider-request:log-add-consumer
+       cider-log-framework cider-log-appender cider-log-consumer
+       (lambda (msg)
+         (when-let (event (nrepl-dict-get msg "event"))
+           ;; TODO: Make sure we add to the right buffer local var
+           (with-current-buffer (get-buffer-create cider-log-buffer-name)
+             (add-to-list 'cider-log-pending-events event)))))
+      (message "Log consumer added."))))
+
+(defun cider-log-pause ()
+  "Pause streaming log events to the client."
+  (interactive)
+  (when (and cider-log-framework cider-log-appender cider-log-consumer)
+    (with-current-buffer (get-buffer-create cider-log-buffer-name)
+      (cider-sync-request:log-remove-consumer cider-log-framework cider-log-appender cider-log-consumer)
+      (setq cider-log-consumer nil)
+      (message "Log consumer removed."))))
+
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
@@ -454,6 +484,8 @@
     (define-key map (kbd "l l") 'cider-log)
     (define-key map (kbd "n") 'cider-log-next-line)
     (define-key map (kbd "p") 'cider-log-previous-line)
+    (define-key map (kbd "P") 'cider-log-pause)
+    (define-key map (kbd "R") 'cider-log-resume)
     map)
   "The Cider log stream mode key map.")
 
