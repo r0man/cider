@@ -474,7 +474,9 @@
        (lambda (msg)
          (when-let (event (nrepl-dict-get msg "event"))
            (cider-log--insert-events cider-log-buffer-name (list event)))))
-      (message "Log consumer added."))))
+      (message "Resumed %s event consumption for appender %s."
+               (cider-log--bold (cider-log-framework-name cider-log-framework))
+               (cider-log--bold (cider-log-appender-name cider-log-appender))))))
 
 (defun cider-log-pause ()
   "Pause streaming log events to the client."
@@ -483,7 +485,9 @@
     (with-current-buffer (get-buffer-create cider-log-buffer-name)
       (cider-sync-request:log-remove-consumer cider-log-framework cider-log-appender cider-log-consumer)
       (setq cider-log-consumer nil)
-      (message "Log consumer removed."))))
+      (message "Paused %s event consumption for appender %s."
+               (cider-log--bold (cider-log-framework-name cider-log-framework))
+               (cider-log--bold (cider-log-appender-name cider-log-appender))))))
 
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
