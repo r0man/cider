@@ -60,7 +60,7 @@
 (defvar cider-log-appender nil
   "The current log appender.")
 
-(defvar-local cider-log-consumer nil
+(defvar cider-log-consumer nil
   "The current log consumer.")
 
 (defvar cider-log-exceptions nil
@@ -491,8 +491,8 @@
 (defun cider-log-pause ()
   "Pause streaming log events to the client."
   (interactive)
-  (when (and cider-log-framework cider-log-appender cider-log-consumer)
-    (with-current-buffer (get-buffer-create cider-log-buffer-name)
+  (with-current-buffer (get-buffer-create cider-log-buffer-name)
+    (when (and cider-log-framework cider-log-appender cider-log-consumer)
       (cider-sync-request:log-remove-consumer cider-log-framework cider-log-appender cider-log-consumer)
       (setq cider-log-consumer nil)
       (message "Paused %s event consumption for appender %s."
