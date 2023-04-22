@@ -730,6 +730,12 @@
                           (cider-log--bold appender-name)
                           (cider-log--bold framework-name))))))))
 
+(defun cider-log-kill-buffer ()
+  "Called from `kill-buffer-hook' to remove the consumer."
+  (when (and (eq 'cider-log-mode major-mode) cider-log-framework cider-log-appender cider-log-consumer)
+    (cider-sync-request:log-remove-consumer cider-log-framework cider-log-appender cider-log-consumer)
+    (setq cider-log-consumer nil)))
+
 ;;;###autoload
 (defun cider-log-show-events ()
   "Show the Cider log data."
@@ -772,6 +778,8 @@
     :inapt-if-not cider-log-appender-attached-p)
    ("r" "Reset filters" cider-log-reset
     :inapt-if cider-log-filter-selected-p)])
+
+(add-hook 'kill-buffer-hook #'cider-log-kill-buffer)
 
 (provide 'cider-log)
 
