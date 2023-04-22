@@ -415,24 +415,24 @@
 
 (defun cider-log--insert-events (buffer events)
   "Insert the log EVENTS into BUFFER."
-  (with-current-buffer buffer
-    (save-excursion
-      (let ((inhibit-read-only t))
-        (goto-char (point-max))
-        (seq-doseq (event events)
-          (insert (cider-log--format-logview-line event)))))))
+  (with-current-buffer (get-buffer-create buffer)
+    (let ((windows (seq-filter (lambda (window) (= (window-point window) (point-max)))
+                               (get-buffer-window-list buffer))))
+      (save-excursion
+        (let ((inhibit-read-only t))
+          (goto-char (point-max))
+          (seq-doseq (event events)
+            (insert (cider-log--format-logview-line event)))))
+      (seq-doseq (window windows)
+        (set-window-point window (point-max))))))
 
 (defun cider-log-revert (&optional _ignore-auto _noconfirm)
   "Revert the Cider log buffer."
   (interactive)
   (with-current-buffer (get-buffer-create cider-log-buffer-name)
-    (let ((events cider-log-pending-events)
-          (windows (seq-filter (lambda (window) (= (window-point window) (point-max)))
-                               (get-buffer-window-list (current-buffer)))))
+    (let ((events cider-log-pending-events))
       (setq cider-log-pending-events nil)
-      (cider-log--insert-events (current-buffer) (reverse events))
-      (seq-doseq (window windows)
-        (set-window-point window (point-max))))))
+      (cider-log--insert-events (current-buffer) (reverse events)))))
 
 (defun cider-log--buffer-stale-p (&optional _noconfirm)
   "Return non-nil if the Cider log buffer is stale."
@@ -473,9 +473,7 @@
        cider-log-framework cider-log-appender cider-log-consumer
        (lambda (msg)
          (when-let (event (nrepl-dict-get msg "event"))
-           ;; TODO: Make sure we add to the right buffer local var
-           (with-current-buffer (get-buffer-create cider-log-buffer-name)
-             (add-to-list 'cider-log-pending-events event)))))
+           (cider-log--insert-events cider-log-buffer-name (list event)))))
       (message "Log consumer added."))))
 
 (defun cider-log-pause ()
@@ -495,8 +493,8 @@
     (define-key map (kbd "l l") 'cider-log)
     (define-key map (kbd "n") 'cider-log-next-line)
     (define-key map (kbd "p") 'cider-log-previous-line)
-    (define-key map (kbd "P") 'cider-log-pause)
-    (define-key map (kbd "R") 'cider-log-resume)
+    (define-key map (kbd "l p") 'cider-log-pause)
+    (define-key map (kbd "l r") 'cider-log-resume)
     map)
   "The Cider log stream mode key map.")
 
