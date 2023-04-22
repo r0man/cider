@@ -47,6 +47,13 @@
   :safe #'stringp
   :type 'string)
 
+(defcustom cider-log-logview-p t
+  "Whether or not to use Logview."
+  :group 'cider
+  :package-version '(cider . "1.7.0")
+  :safe #'booleanp
+  :type 'boolean)
+
 (defvar cider-log-framework nil
   "The current log framework to use.")
 
@@ -453,14 +460,17 @@
 
 (defun cider-log-next-line (&optional n)
   "Move N lines forward."
-  (interactive)
-  (forward-line (or n 1))
-  (when (get-buffer-window cider-inspector-buffer)
-    (save-window-excursion (cider-log-inspect-event-at-point))))
+  (interactive "p")
+  (let ((n (or n 1)))
+    (if cider-log-logview-p
+        (logview-next-entry n)
+      (forward-line n))
+    (when (get-buffer-window cider-inspector-buffer)
+      (save-window-excursion (cider-log-inspect-event-at-point)))))
 
 (defun cider-log-previous-line (&optional n)
   "Move N lines backward."
-  (interactive)
+  (interactive "p")
   (cider-log-next-line (- (or n 1))))
 
 (defun cider-log-resume ()
