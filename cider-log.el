@@ -25,7 +25,6 @@
 
 ;;; Code:
 
-(require 'autorevert)
 (require 'cider)
 (require 'cider-inspector)
 (require 'cl-lib)
@@ -453,19 +452,6 @@
       (seq-doseq (window windows)
         (set-window-point window (point-max))))))
 
-(defun cider-log-revert (&optional _ignore-auto _noconfirm)
-  "Revert the Cider log buffer."
-  (interactive)
-  ;; (with-current-buffer (get-buffer-create cider-log-buffer-name)
-  ;;   (let ((events cider-log-pending-events))
-  ;;     (setq cider-log-pending-events nil)
-  ;;     (cider-log--insert-events (current-buffer) (reverse events))))
-  )
-
-(defun cider-log--buffer-stale-p (&optional _noconfirm)
-  "Return non-nil if the Cider log buffer is stale."
-  (car cider-log-pending-events))
-
 (defun cider-log-inspect-event-at-point ()
   "Inspect the log event at point."
   (interactive)
@@ -474,10 +460,6 @@
      (cider-sync-request:log-inspect-event
       cider-log-framework cider-log-appender
       (nrepl-dict-get event "id")))))
-
-(defun cider-log--revert-buffer (_ignore-auto _noconfirm)
-  "Revert the Cider log buffer."
-  (cider-log-refresh))
 
 (defun cider-log-next-line (&optional n)
   "Move N lines forward."
@@ -531,7 +513,6 @@
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
     (define-key map (kbd "RET") 'cider-log-inspect-event-at-point)
-    (define-key map (kbd "g") 'cider-log-revert)
     (define-key map (kbd "l l") 'cider-log)
     (define-key map (kbd "n") 'cider-log-next-line)
     (define-key map (kbd "p") 'cider-log-previous-line)
@@ -543,11 +524,7 @@
 (define-derived-mode cider-log-mode logview-mode "Cider Log"
   "Special mode for streaming Cider log events."
   (use-local-map cider-log-mode-map)
-  (setq-local auto-revert-interval 1)
-  (setq-local auto-revert-verbose nil)
-  (setq-local buffer-stale-function #'cider-log--buffer-stale-p)
   (setq-local electric-indent-chars nil)
-  (setq-local revert-buffer-function #'cider-log-revert)
   (setq-local sesman-sycider 'CIDER)
   (auto-revert-mode 1)
   (when (fboundp 'evil-set-initial-state)
