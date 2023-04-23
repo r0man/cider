@@ -752,13 +752,14 @@
        (lambda (msg)
          (nrepl-dbind-response msg (log-add-consumer log-event status)
            (cond ((member "done" status)
-                  (switch-to-buffer buffer)
-                  (setq consumer log-add-consumer)
-                  (setq-local cider-log-consumer consumer)
-                  (message "Added %s event consumer %s to appender %s."
-                           (cider-log--bold (cider-log-framework-name framework))
-                           (cider-log--bold (cider-log-consumer-id consumer))
-                           (cider-log--bold (cider-log-appender-name appender))))
+                  (with-current-buffer buffer
+                    (setq consumer log-add-consumer)
+                    (setq-local cider-log-consumer consumer)
+                    (switch-to-buffer buffer)
+                    (message "Added %s event consumer %s to appender %s."
+                             (cider-log--bold (cider-log-framework-name framework))
+                             (cider-log--bold (cider-log-consumer-id consumer))
+                             (cider-log--bold (cider-log-appender-name appender)))))
                  ((member "log-event" status)
                   (seq-doseq (buffer (cider-log-consumer-find-buffer consumer))
                     (with-current-buffer buffer
