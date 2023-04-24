@@ -768,6 +768,8 @@
                                    (cider-log--bold (cider-log-appender-id appender)))))
                        ((member "log-event" status)
                         (let ((buffers (cider-log-consumer-find-buffer consumer)))
+                          (when (seq-empty-p buffers)
+                            (message "WARNING: Consumer %s not found." (cider-log-consumer-id consumer)))
                           (seq-doseq (buffer buffers)
                             (with-current-buffer buffer
                               (cider-log--insert-events buffer (list log-event))
