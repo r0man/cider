@@ -96,17 +96,15 @@
 
 (defun cider-log--event-filters ()
   "Return the log event filters."
-  (seq-filter
-   (lambda (filter) (cadr filter))
-   `(("end-time" ,(when cider-log-end-time
-                    (* 1000 (time-convert cider-log-end-time 'integer))))
-     ("exceptions" ,cider-log-exceptions)
-     ("levels" ,cider-log-levels)
-     ("loggers" ,cider-log-loggers)
-     ("pattern" ,cider-log-pattern)
-     ("start-time" ,(when cider-log-start-time
-                      (* 1000 (time-convert cider-log-start-time 'integer))))
-     ("threads" ,cider-log-threads))))
+  (nrepl-dict "end-time" (when cider-log-end-time
+                           (* 1000 (time-convert cider-log-end-time 'integer)))
+              "exceptions" cider-log-exceptions
+              "levels" cider-log-levels
+              "loggers" cider-log-loggers
+              "pattern" cider-log-pattern
+              "start-time" (when cider-log-start-time
+                             (* 1000 (time-convert cider-log-start-time 'integer)))
+              "threads" cider-log-threads))
 
 (defun cider-log-filter-selected-p ()
   "Return non-nil if any filter is selected, otherwise nil."
@@ -495,7 +493,6 @@
              (appender cider-log-appender)
              (consumer cider-log-consumer))
     (cider-sync-request:log-remove-consumer framework appender consumer)
-    (message "CIDER-LOG--REMOVE-CURRENT-BUFFER-CONSUMER: %s" consumer)
     (setq-local cider-log-consumer nil)
     consumer))
 
@@ -745,24 +742,17 @@
         (if (cider-log-consumer-id consumer)
             (progn
               (nrepl-dict-put consumer "filters" filters)
-              (let ((response (cider-sync-request:log-update-consumer framework appender consumer)))
-                (switch-to-buffer buffer)
-                (message "UPDATE: %s " response)
-                (message "Update %s event consumer %s for appender %s."
-                         (cider-log--bold (cider-log-framework-name framework))
-                         (cider-log--bold (cider-log-consumer-id consumer))
-                         (cider-log--bold (cider-log-appender-id appender)))))
+              (cider-sync-request:log-update-consumer framework appender consumer)
+              (switch-to-buffer buffer)
+              (message "Update %s event consumer %s for appender %s."
+                       (cider-log--bold (cider-log-framework-name framework))
+                       (cider-log--bold (cider-log-consumer-id consumer))
+                       (cider-log--bold (cider-log-appender-id appender))))
           (progn
             (cider-log--search framework appender filters)
             (cider-log-mode)
             (setq-local cider-log-framework framework)
             (setq-local cider-log-appender appender)
-            ;; (setq-local logview-additional-level-mappings
-            ;;             '((error       "SEVERE")
-            ;;               (warning     "WARNING")
-            ;;               (information "INFO")
-            ;;               (debug       "CONFIG" "FINE")
-            ;;               (trace       "FINER" "FINEST")))
             (cider-request:log-add-consumer
              framework appender (nrepl-dict "filters" filters)
              (lambda (msg)
@@ -771,7 +761,6 @@
                         (with-current-buffer buffer
                           (setq consumer log-add-consumer)
                           (setq cider-log-consumer log-add-consumer)
-                          (message "SET LOG CONSUMER: [%s] %s" (current-buffer) consumer)
                           (switch-to-buffer buffer)
                           (message "Added %s event consumer %s to appender %s."
                                    (cider-log--bold (cider-log-framework-name framework))
@@ -779,7 +768,6 @@
                                    (cider-log--bold (cider-log-appender-id appender)))))
                        ((member "log-event" status)
                         (let ((buffers (cider-log-consumer-find-buffer consumer)))
-                          (message "CONSUMER BUFFERS [%s]: %s" consumer buffers)
                           (seq-doseq (buffer buffers)
                             (with-current-buffer buffer
                               (cider-log--insert-events buffer (list log-event))
