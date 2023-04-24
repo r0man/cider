@@ -428,7 +428,7 @@
   (get-text-property (point) :cider-log-event))
 
 (defun cider-log--search (framework appender filters)
-  "Return the log events."
+  "Search the events of the log FRAMEWORK APPENDER matching FILTERS."
   (let ((inhibit-read-only t))
     (erase-buffer)
     (seq-doseq (event (cider-sync-request:log-search framework appender :filters filters))
@@ -474,18 +474,11 @@
 (defun cider-log-resume ()
   "Resume streaming log events to the client."
   (interactive)
-  ;; (with-current-buffer (get-buffer-create cider-log-buffer-name)
-  ;;   (when (and cider-log-framework cider-log-appender)
-  ;;     (setq cider-log-consumer cider-log-buffer-name)
-  ;;     (cider-request:log-add-consumer
-  ;;      cider-log-framework cider-log-appender cider-log-consumer
-  ;;      (lambda (msg)
-  ;;        (when-let (event (nrepl-dict-get msg "event"))
-  ;;          (cider-log--insert-events cider-log-buffer-name (list event)))))
-  ;;     (message "Resumed %s event consumption for appender %s."
-  ;;              (cider-log--bold (cider-log-framework-name cider-log-framework))
-  ;;              (cider-log--bold (cider-log-appender-id cider-log-appender)))))
-  )
+  (when (and cider-log-framework cider-log-appender)
+    (cider-log-show-events cider-log-framework cider-log-appender)
+    (message "Resumed %s event consumption for appender %s."
+             (cider-log--bold (cider-log-framework-name cider-log-framework))
+             (cider-log--bold (cider-log-appender-id cider-log-appender)))))
 
 (defun cider-log--remove-current-buffer-consumer ()
   "Cleanup the log consumer of the current buffer."
@@ -499,27 +492,27 @@
 (defun cider-log-pause ()
   "Pause streaming log events to the client."
   (interactive)
-  ;; (with-current-buffer (get-buffer-create cider-log-buffer-name)
-  ;;   (when (cider-log--remove-current-buffer-consumer)
-  ;;     (message "Paused %s event consumption for appender %s."
-  ;;              (cider-log--bold (cider-log-framework-name cider-log-framework))
-  ;;              (cider-log--bold (cider-log-appender-id cider-log-appender)))))
-  )
+  (when (cider-log--remove-current-buffer-consumer)
+    (message "Paused %s event consumption for appender %s."
+             (cider-log--bold (cider-log-framework-name cider-log-framework))
+             (cider-log--bold (cider-log-appender-id cider-log-appender)))))
 
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
     (define-key map (kbd "RET") 'cider-log-inspect-event-at-point)
     (define-key map (kbd "l l") 'cider-log)
-    (define-key map (kbd "n") 'cider-log-next-line)
-    (define-key map (kbd "p") 'cider-log-previous-line)
     (define-key map (kbd "l p") 'cider-log-pause)
     (define-key map (kbd "l r") 'cider-log-resume)
+    (define-key map (kbd "n") 'cider-log-next-line)
+    (define-key map (kbd "p") 'cider-log-previous-line)
     map)
   "The Cider log stream mode key map.")
 
 (define-derived-mode cider-log-mode logview-mode "Cider Log"
-  "Special mode for streaming Cider log events."
+  "Major mode for inspecting Clojure log events.
+
+\\{cider-log-mode-map}"
   (use-local-map cider-log-mode-map)
   (setq-local electric-indent-chars nil)
   (setq-local sesman-sycider 'CIDER)
@@ -773,7 +766,8 @@
                           (seq-doseq (buffer buffers)
                             (with-current-buffer buffer
                               (cider-log--insert-events buffer (list log-event))
-                              (unless (logview-initialized-p)
+                              (when (and cider-log-logview-p
+                                         (not (logview-initialized-p)))
                                 (logview--guess-submode))))))))))))))))
 
 ;;;###autoload
