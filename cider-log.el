@@ -135,7 +135,7 @@
                   "filters" ,(cider-log-consumer-filters consumer))
                 (cider-nrepl-send-request callback)))
 
-(defun cider-request:log-update-consumer (framework appender consumer &optional callback)
+(defun cider-sync-request:log-update-consumer (framework appender consumer)
   "Add CONSUMER to the APPENDER of FRAMEWORK and call CALLBACK on log events."
   (cider-ensure-op-supported "log-update-consumer")
   (thread-first `("op" "log-update-consumer"
@@ -143,7 +143,8 @@
                   "appender" ,(cider-log-appender-id appender)
                   "consumer" ,(cider-log-consumer-id consumer)
                   "filters" ,(cider-log-consumer-filters consumer))
-                (cider-nrepl-send-request callback)))
+                (cider-nrepl-send-sync-request)
+                (nrepl-dict-get "log-update-consumer")))
 
 (defun cider-sync-request:log-add-appender (framework appender)
   "Add the APPENDER to the log FRAMEWORK."
@@ -424,21 +425,15 @@
   (cider-log-framework-remove-appender cider-log-framework cider-log-appender)
   (setq cider-log-appender nil))
 
-(defun cider-log--search ()
-  "Search for log events matching the current filters."
-  (cider-sync-request:log-search
-   cider-log-framework cider-log-appender :filters (cider-log--event-filters)))
-
 (defun cider-log-event-at-point ()
   "Return the log event at point."
   (get-text-property (point) :cider-log-event))
 
-(defun cider-log-refresh ()
+(defun cider-log--search (framework appender filters)
   "Return the log events."
-  (interactive)
   (let ((inhibit-read-only t))
     (erase-buffer)
-    (seq-doseq (event (cider-log--search))
+    (seq-doseq (event (cider-sync-request:log-search framework appender :filters filters))
       (insert (cider-log--format-logview-line event)))))
 
 (defun cider-log--insert-events (buffer events)
@@ -500,6 +495,7 @@
              (appender cider-log-appender)
              (consumer cider-log-consumer))
     (cider-sync-request:log-remove-consumer framework appender consumer)
+    (message "CIDER-LOG--REMOVE-CURRENT-BUFFER-CONSUMER: %s" consumer)
     (setq-local cider-log-consumer nil)
     consumer))
 
@@ -695,8 +691,8 @@
   (interactive (list (cider-log-framework) (cider-log-appender)))
   (cider-sync-request:log-add-appender framework appender)
   (message "Log appender %s added to the %s framework."
-           (cider-log--bold (cider-log-framework-name framework))
-           (cider-log--bold (cider-log-appender-id appender))))
+           (cider-log--bold (cider-log-appender-id appender))
+           (cider-log--bold (cider-log-framework-name framework))))
 
 ;;;###autoload
 (defun cider-log-appender-clear (framework appender)
@@ -723,8 +719,7 @@
     (when-let ((framework cider-log-framework)
                (appender cider-log-appender)
                (consumer cider-log-consumer))
-      (cider-sync-request:log-remove-consumer framework appender consumer)
-      (setq cider-log-consumer nil)
+      (cider-log--remove-current-buffer-consumer)
       (message "Removed %s event consumer %s from appender %s."
                (cider-log--bold (cider-log-framework-name framework))
                (cider-log--bold (cider-log-consumer-id consumer))
@@ -743,33 +738,53 @@
 (defun cider-log-show-events (framework appender)
   "Show the Cider log data for FRAMEWORK and  APPENDER."
   (interactive (list (cider-log-framework) (cider-log-appender)))
-  (let ((buffer (get-buffer-create cider-log-buffer-name))
-        (consumer nil))
+  (let ((buffer (get-buffer-create cider-log-buffer-name)))
     (with-current-buffer buffer
-      (cider-log--remove-current-buffer-consumer)
-      (setq-local cider-log-framework framework)
-      (setq-local cider-log-appender appender)
-      (cider-log-refresh)
-      (cider-log-mode)
-      (cider-request:log-add-consumer
-       framework appender (nrepl-dict "filters" (cider-log--event-filters))
-       (lambda (msg)
-         (nrepl-dbind-response msg (log-add-consumer log-event status)
-           (cond ((member "done" status)
-                  (with-current-buffer buffer
-                    (setq consumer log-add-consumer)
-                    (setq-local cider-log-consumer consumer)
-                    (switch-to-buffer buffer)
-                    (message "Added %s event consumer %s to appender %s."
-                             (cider-log--bold (cider-log-framework-name framework))
-                             (cider-log--bold (cider-log-consumer-id consumer))
-                             (cider-log--bold (cider-log-appender-id appender)))))
-                 ((member "log-event" status)
-                  (seq-doseq (buffer (cider-log-consumer-find-buffer consumer))
-                    (with-current-buffer buffer
-                      (cider-log--insert-events buffer (list log-event))
-                      (unless (logview-initialized-p)
-                        (cider-log-mode))))))))))))
+      (let ((consumer cider-log-consumer)
+            (filters (cider-log--event-filters)))
+        (if (cider-log-consumer-id consumer)
+            (progn
+              (nrepl-dict-put consumer "filters" filters)
+              (let ((response (cider-sync-request:log-update-consumer framework appender consumer)))
+                (switch-to-buffer buffer)
+                (message "UPDATE: %s " response)
+                (message "Update %s event consumer %s for appender %s."
+                         (cider-log--bold (cider-log-framework-name framework))
+                         (cider-log--bold (cider-log-consumer-id consumer))
+                         (cider-log--bold (cider-log-appender-id appender)))))
+          (progn
+            (cider-log--search framework appender filters)
+            (cider-log-mode)
+            (setq-local cider-log-framework framework)
+            (setq-local cider-log-appender appender)
+            ;; (setq-local logview-additional-level-mappings
+            ;;             '((error       "SEVERE")
+            ;;               (warning     "WARNING")
+            ;;               (information "INFO")
+            ;;               (debug       "CONFIG" "FINE")
+            ;;               (trace       "FINER" "FINEST")))
+            (cider-request:log-add-consumer
+             framework appender (nrepl-dict "filters" filters)
+             (lambda (msg)
+               (nrepl-dbind-response msg (log-add-consumer log-event status)
+                 (cond ((member "done" status)
+                        (with-current-buffer buffer
+                          (setq consumer log-add-consumer)
+                          (setq cider-log-consumer log-add-consumer)
+                          (message "SET LOG CONSUMER: [%s] %s" (current-buffer) consumer)
+                          (switch-to-buffer buffer)
+                          (message "Added %s event consumer %s to appender %s."
+                                   (cider-log--bold (cider-log-framework-name framework))
+                                   (cider-log--bold (cider-log-consumer-id consumer))
+                                   (cider-log--bold (cider-log-appender-id appender)))))
+                       ((member "log-event" status)
+                        (let ((buffers (cider-log-consumer-find-buffer consumer)))
+                          (message "CONSUMER BUFFERS [%s]: %s" consumer buffers)
+                          (seq-doseq (buffer buffers)
+                            (with-current-buffer buffer
+                              (cider-log--insert-events buffer (list log-event))
+                              (unless (logview-initialized-p)
+                                (logview--guess-submode))))))))))))))))
 
 ;;;###autoload
 (defun cider-log-reset ()
@@ -777,6 +792,12 @@
   (interactive)
   (cider-log--reset-filters)
   (cider-log))
+
+(defun cider-log-inspect-framework ()
+  (interactive)
+  (when cider-log-framework
+    (let ((framework (cider-log-framework-reload cider-log-framework)))
+      (inspector-inspect framework))))
 
 ;;;###autoload (autoload 'cider-log "cider-log" "Show the Cider log menu." t)
 (transient-define-prefix cider-log ()
