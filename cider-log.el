@@ -32,7 +32,7 @@
 (require 'org)
 (require 'transient)
 
-(defcustom cider-log-appender-name "cider-log"
+(defcustom cider-log-appender-id "cider-log"
   "The name of the default log appender."
   :group 'cider
   :package-version '(cider . "1.7.0")
@@ -122,7 +122,7 @@
   "Return non-nil if the log appender is attached, otherwise nil."
   (when (and cider-log-framework cider-log-appender)
     (let ((framework (cider-log-framework-reload cider-log-framework)))
-      (cider-log-framework-appender-by-id framework (cider-log-appender-name cider-log-appender)))))
+      (cider-log-framework-appender-by-id framework (cider-log-appender-id cider-log-appender)))))
 
 ;; NREPL
 
@@ -131,8 +131,8 @@
   (cider-ensure-op-supported "log-add-consumer")
   (thread-first `("op" "log-add-consumer"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender)
-                  "filter" ,(cider-log-consumer-filter consumer))
+                  "appender" ,(cider-log-appender-id appender)
+                  "filters" ,(cider-log-consumer-filters consumer))
                 (cider-nrepl-send-request callback)))
 
 (defun cider-request:log-update-consumer (framework appender consumer &optional callback)
@@ -140,9 +140,9 @@
   (cider-ensure-op-supported "log-update-consumer")
   (thread-first `("op" "log-update-consumer"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender)
+                  "appender" ,(cider-log-appender-id appender)
                   "consumer" ,(cider-log-consumer-id consumer)
-                  "filter" ,(cider-log-consumer-filter consumer))
+                  "filters" ,(cider-log-consumer-filters consumer))
                 (cider-nrepl-send-request callback)))
 
 (defun cider-sync-request:log-add-appender (framework appender)
@@ -150,7 +150,7 @@
   (cider-ensure-op-supported "log-add-appender")
   (thread-first `("op" "log-add-appender"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-add-appender")))
 
@@ -159,7 +159,7 @@
   (cider-ensure-op-supported "log-clear-appender")
   (thread-first `("op" "log-clear-appender"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-clear-appender")))
 
@@ -168,7 +168,7 @@
   (cider-ensure-op-supported "log-inspect-event")
   (thread-first `("op" "log-inspect-event"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender)
+                  "appender" ,(cider-log-appender-id appender)
                   "event-id" ,event-id)
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "value")))
@@ -187,7 +187,7 @@
   (cider-ensure-op-supported "log-search")
   (thread-first `("op" "log-search"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender)
+                  "appender" ,(cider-log-appender-id appender)
                   "filters" ,filters
                   "limit" ,limit)
                 (cider-nrepl-send-sync-request)
@@ -198,7 +198,7 @@
   (cider-ensure-op-supported "log-exceptions")
   (thread-first `("op" "log-exceptions"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-exceptions")))
 
@@ -207,7 +207,7 @@
   (cider-ensure-op-supported "log-levels")
   (thread-first `("op" "log-levels"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-levels")))
 
@@ -216,7 +216,7 @@
   (cider-ensure-op-supported "log-loggers")
   (thread-first `("op" "log-loggers"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-loggers")))
 
@@ -225,7 +225,7 @@
   (cider-ensure-op-supported "log-remove-appender")
   (thread-first `("op" "log-remove-appender"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-remove-appender")))
 
@@ -234,7 +234,7 @@
   (cider-ensure-op-supported "log-remove-consumer")
   (thread-first `("op" "log-remove-consumer"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender)
+                  "appender" ,(cider-log-appender-id appender)
                   "consumer" ,(cider-log-consumer-id consumer))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-remove-consumer")))
@@ -244,7 +244,7 @@
   (cider-ensure-op-supported "log-threads")
   (thread-first `("op" "log-threads"
                   "framework" ,(cider-log-framework-id framework)
-                  "appender" ,(cider-log-appender-name appender))
+                  "appender" ,(cider-log-appender-id appender))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-threads")))
 
@@ -309,7 +309,7 @@
 (defun cider-log-framework-appender-by-id (framework id)
   "Lookup the appender of the log FRAMEWORK by ID."
   (seq-find (lambda (appender)
-              (equal id (cider-log-appender-name appender)))
+              (equal id (cider-log-appender-id appender)))
             (cider-log-framework-appenders framework)))
 
 (defun cider-log-framework-by-name (frameworks name)
@@ -327,9 +327,9 @@
 
 ;; Appender
 
-(defun cider-log-appender-name (appender)
+(defun cider-log-appender-id (appender)
   "Return the id of the log APPENDER."
-  (nrepl-dict-get appender "name"))
+  (nrepl-dict-get appender "id"))
 
 ;; Consumer
 
@@ -337,9 +337,9 @@
   "Return the id of the log CONSUMER."
   (nrepl-dict-get consumer "id"))
 
-(defun cider-log-consumer-filter (consumer)
-  "Return the filter of the log CONSUMER."
-  (nrepl-dict-get consumer "filter"))
+(defun cider-log-consumer-filters (consumer)
+  "Return the filters of the log CONSUMER."
+  (nrepl-dict-get consumer "filters"))
 
 (defun cider-log-add-consumer ()
   "Attach the Cider log."
@@ -392,13 +392,15 @@
 
 (defun cider-log-select-appender ()
   "Select the log appender."
-  (nrepl-dict "name" (read-string "Log appender: " nil nil cider-log-appender-name)))
+  (nrepl-dict "id" (read-string "Log appender: " nil nil cider-log-appender-id)))
 
 (defun cider-log-framework ()
+  "Return the current log framework, or select it."
   (or cider-log-framework
       (setq cider-log-framework (cider-log-select-framework))))
 
 (defun cider-log-appender ()
+  "Return the current log appender, or select it."
   (or cider-log-appender
       (setq cider-log-appender (cider-log-select-appender))))
 
@@ -414,7 +416,7 @@
   (unless cider-log-framework
     (setq cider-log-framework (cider-log-select-framework)))
   (unless cider-log-appender
-    (setq cider-log-appender (nrepl-dict "name" cider-log-appender-name))))
+    (setq cider-log-appender (nrepl-dict "id" cider-log-appender-id))))
 
 (defun cider-log-remove-appender ()
   "Remove the log appender from the current framework."
@@ -479,17 +481,18 @@
 (defun cider-log-resume ()
   "Resume streaming log events to the client."
   (interactive)
-  (with-current-buffer (get-buffer-create cider-log-buffer-name)
-    (when (and cider-log-framework cider-log-appender)
-      (setq cider-log-consumer cider-log-buffer-name)
-      (cider-request:log-add-consumer
-       cider-log-framework cider-log-appender cider-log-consumer
-       (lambda (msg)
-         (when-let (event (nrepl-dict-get msg "event"))
-           (cider-log--insert-events cider-log-buffer-name (list event)))))
-      (message "Resumed %s event consumption for appender %s."
-               (cider-log--bold (cider-log-framework-name cider-log-framework))
-               (cider-log--bold (cider-log-appender-name cider-log-appender))))))
+  ;; (with-current-buffer (get-buffer-create cider-log-buffer-name)
+  ;;   (when (and cider-log-framework cider-log-appender)
+  ;;     (setq cider-log-consumer cider-log-buffer-name)
+  ;;     (cider-request:log-add-consumer
+  ;;      cider-log-framework cider-log-appender cider-log-consumer
+  ;;      (lambda (msg)
+  ;;        (when-let (event (nrepl-dict-get msg "event"))
+  ;;          (cider-log--insert-events cider-log-buffer-name (list event)))))
+  ;;     (message "Resumed %s event consumption for appender %s."
+  ;;              (cider-log--bold (cider-log-framework-name cider-log-framework))
+  ;;              (cider-log--bold (cider-log-appender-id cider-log-appender)))))
+  )
 
 (defun cider-log--remove-current-buffer-consumer ()
   "Cleanup the log consumer of the current buffer."
@@ -503,11 +506,12 @@
 (defun cider-log-pause ()
   "Pause streaming log events to the client."
   (interactive)
-  (with-current-buffer (get-buffer-create cider-log-buffer-name)
-    (when (cider-log--remove-current-buffer-consumer)
-      (message "Paused %s event consumption for appender %s."
-               (cider-log--bold (cider-log-framework-name cider-log-framework))
-               (cider-log--bold (cider-log-appender-name cider-log-appender))))))
+  ;; (with-current-buffer (get-buffer-create cider-log-buffer-name)
+  ;;   (when (cider-log--remove-current-buffer-consumer)
+  ;;     (message "Paused %s event consumption for appender %s."
+  ;;              (cider-log--bold (cider-log-framework-name cider-log-framework))
+  ;;              (cider-log--bold (cider-log-appender-id cider-log-appender)))))
+  )
 
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
@@ -692,7 +696,7 @@
   (cider-sync-request:log-add-appender framework appender)
   (message "Log appender %s added to the %s framework."
            (cider-log--bold (cider-log-framework-name framework))
-           (cider-log--bold (cider-log-appender-name appender))))
+           (cider-log--bold (cider-log-appender-id appender))))
 
 ;;;###autoload
 (defun cider-log-appender-clear (framework appender)
@@ -701,7 +705,7 @@
   (cider-sync-request:log-clear framework appender)
   (cider-log-show-events framework appender)
   (message "Cleared the %s log appender of the %s framework."
-           (cider-log--bold (cider-log-appender-name appender))
+           (cider-log--bold (cider-log-appender-id appender))
            (cider-log--bold (cider-log-framework-name framework))))
 
 ;;;###autoload
@@ -711,7 +715,7 @@
   (cider-sync-request:log-remove-appender framework appender)
   (message "Log appender %s removed from the %s framework."
            (cider-log--bold (cider-log-framework-name framework))
-           (cider-log--bold (cider-log-appender-name appender))))
+           (cider-log--bold (cider-log-appender-id appender))))
 
 (defun cider-log-kill-buffer ()
   "Called from `kill-buffer-hook' to remove the consumer."
@@ -724,7 +728,7 @@
       (message "Removed %s event consumer %s from appender %s."
                (cider-log--bold (cider-log-framework-name framework))
                (cider-log--bold (cider-log-consumer-id consumer))
-               (cider-log--bold (cider-log-appender-name appender))))))
+               (cider-log--bold (cider-log-appender-id appender))))))
 
 (defun cider-log-consumer-find-buffer (consumer)
   "Find the buffers for the log CONSUMER."
@@ -748,7 +752,7 @@
       (cider-log-refresh)
       (cider-log-mode)
       (cider-request:log-add-consumer
-       framework appender (nrepl-dict "filter" (cider-log--event-filters))
+       framework appender (nrepl-dict "filters" (cider-log--event-filters))
        (lambda (msg)
          (nrepl-dbind-response msg (log-add-consumer log-event status)
            (cond ((member "done" status)
@@ -759,7 +763,7 @@
                     (message "Added %s event consumer %s to appender %s."
                              (cider-log--bold (cider-log-framework-name framework))
                              (cider-log--bold (cider-log-consumer-id consumer))
-                             (cider-log--bold (cider-log-appender-name appender)))))
+                             (cider-log--bold (cider-log-appender-id appender)))))
                  ((member "log-event" status)
                   (seq-doseq (buffer (cider-log-consumer-find-buffer consumer))
                     (with-current-buffer buffer
