@@ -153,6 +153,15 @@
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-add-appender")))
 
+(defun cider-sync-request:log-update-appender (framework appender)
+  "Update the APPENDER of the log FRAMEWORK."
+  (cider-ensure-op-supported "log-update-appender")
+  (thread-first `("op" "log-update-appender"
+                  "framework" ,(cider-log-framework-id framework)
+                  "appender" ,(cider-log-appender-id appender))
+                (cider-nrepl-send-sync-request)
+                (nrepl-dict-get "log-update-appender")))
+
 (defun cider-sync-request:log-clear (framework appender)
   "Clear the log events for FRAMEWORK and APPENDER."
   (cider-ensure-op-supported "log-clear-appender")
