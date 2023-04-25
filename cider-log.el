@@ -431,7 +431,7 @@
   "Search the events of the log FRAMEWORK APPENDER matching FILTERS."
   (let ((inhibit-read-only t))
     (erase-buffer)
-    (seq-doseq (event (cider-sync-request:log-search framework appender :filters filters))
+    (seq-doseq (event (nreverse (cider-sync-request:log-search framework appender :filters filters)))
       (insert (cider-log--format-logview-line event)))))
 
 (defun cider-log--insert-events (buffer events)
