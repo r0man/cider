@@ -585,7 +585,7 @@
   (use-local-map cider-log-mode-map)
   (setq-local electric-indent-chars nil)
   (setq-local logview-show-ellipses nil)
-  (setq-local sesman-sycider 'CIDER)
+  (setq-local sesman-system 'CIDER)
   (setq-local truncate-lines t)
   (when (fboundp 'evil-set-initial-state)
     (evil-set-initial-state 'cider-log-mode 'emacs)))
