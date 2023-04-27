@@ -202,9 +202,7 @@
   (cider-ensure-op-supported "log-frameworks")
   (thread-first `("op" "log-frameworks")
                 (cider-nrepl-send-sync-request)
-                (nrepl-dict-get "log-frameworks")
-                ;; TODO: Just return a list
-                (nrepl-dict-vals)))
+                (nrepl-dict-get "log-frameworks")))
 
 (cl-defun cider-sync-request:log-search (framework appender &key limit filters)
   "Search log events of FRAMEWORK and APPENDER using LIMIT and FILTERS."
