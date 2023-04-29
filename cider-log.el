@@ -250,14 +250,14 @@
 
 (defun cider-log--read-buffer (&optional prompt initial-input history)
   "Read the log buffer from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (read-string prompt initial-input history cider-log-buffer))
+  (read-string (or prompt "Buffer: ") initial-input history cider-log-buffer))
 
 (defun cider-log--read-exceptions (&optional prompt initial-input history)
   "Read a list of exceptions from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
   (let ((table (when (cider-log-appender-attached-p)
                  (nrepl-dict-keys (cider-sync-request:log-exceptions
                                    cider-log-framework cider-log-appender)))))
-    (completing-read-multiple prompt table nil nil initial-input history)))
+    (completing-read-multiple (or prompt "Exceptions: ") table nil nil initial-input history)))
 
 (defun cider-log--read-framework (&optional prompt initial-input history)
   "Read a framework from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
@@ -276,21 +276,21 @@
   (let ((table (when (cider-log-appender-attached-p)
                  (nrepl-dict-keys (cider-sync-request:log-levels
                                    cider-log-framework cider-log-appender)))))
-    (completing-read-multiple prompt table nil nil initial-input history)))
+    (completing-read-multiple (or prompt "Levels: ") table nil nil initial-input history)))
 
 (defun cider-log--read-loggers (&optional prompt initial-input history)
   "Read a list of loggers from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
   (let ((table (when (cider-log-appender-attached-p)
                  (nrepl-dict-keys (cider-sync-request:log-loggers
                                    cider-log-framework cider-log-appender)))))
-    (completing-read-multiple prompt table nil nil initial-input history)))
+    (completing-read-multiple (or "Loggers: " prompt) table nil nil initial-input history)))
 
 (defun cider-log--read-threads (&optional prompt initial-input history)
   "Read a list of threads from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
   (let ((table (when (cider-log-appender-attached-p)
                  (nrepl-dict-keys (cider-sync-request:log-threads
                                    cider-log-framework cider-log-appender)))))
-    (completing-read-multiple prompt table nil nil initial-input history)))
+    (completing-read-multiple (or prompt "Threads: ") table nil nil initial-input history)))
 
 (defun cider-log--read-time (&optional prompt initial-input _)
   "Read a time from the minibuffer using PROMPT and INITIAL-INPUT."
