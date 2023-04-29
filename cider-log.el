@@ -242,21 +242,6 @@
            (unless (string-blank-p annotation)
              (propertize (format " - %s" (cider-log--strip-whitespace annotation)) 'face 'font-lock-comment-face)))))))
 
-(defun cider-log-completing-read-framework (frameworks &optional prompt initial-input history)
-  "Read a log framework in the minibuffer with completion.
-
-  FRAMEWORKS is a list of log frameworks.
-
-  PROMPT is a string to prompt with; normally it ends in a colon
-  and a space.
-
-  INITIAL-INPUT if non-nil, insert it in the minibuffer
-  initially.
-
-  HISTORY if non-nil, specifies a history list and optionally the initial
-  position in the list."
-  )
-
 (defun cider-log--read-appender (prompt initial-input history)
   "Read a appender from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
   (nrepl-dict "id" (read-string (or prompt "Log appender: ")
