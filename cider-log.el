@@ -39,7 +39,7 @@
   :safe #'stringp
   :type 'string)
 
-(defcustom cider-log-buffer-name "*cider-log*"
+(defcustom cider-log-buffer "*cider-log*"
   "The name of the log buffer."
   :group 'cider
   :package-version '(cider . "1.7.0")
@@ -68,59 +68,17 @@
 (defvar-local cider-log-consumer nil
   "The current log consumer.")
 
-(defvar cider-log-exceptions nil
-  "The list of exception names used to filter records.")
-
-(defvar cider-log-levels nil
-  "The list of log level names used to filter records.")
-
-(defvar cider-log-loggers nil
-  "The list of logger names used to filter records.")
-
-(defvar cider-log-threads nil
-  "The list of thread names used to filter records.")
-
-(defvar cider-log-start-time nil
-  "The start time used to filter records.")
-
-(defvar cider-log-end-time nil
-  "The end time used to filter records.")
-
-(defvar cider-log-pattern nil
-  "The regular expression pattern used to filter records.")
-
-(defvar-local cider-log-pending-events nil
-  "The pending log event that need to be inserted into the buffer.")
-
 (defun cider-log--bold (s)
   "Return S with a bold face."
   (when s (propertize (format "%s" s) 'face 'bold)))
 
+(defun cider-log--format-time (time)
+  "Format TIME in ISO8601 format."
+  (format-time-string "%FT%T%z" time))
+
 (defun cider-log--strip-whitespace (s)
   "Replace multiple white space characters in S with a single one."
   (replace-regexp-in-string "[\n ]+" " " s))
-
-(defun cider-log-filters ()
-  "Return the log appender/consumer/event filters."
-  (nrepl-dict "end-time" (when cider-log-end-time
-                           (* 1000 (time-convert cider-log-end-time 'integer)))
-              "exceptions" cider-log-exceptions
-              "levels" cider-log-levels
-              "loggers" cider-log-loggers
-              "pattern" cider-log-pattern
-              "start-time" (when cider-log-start-time
-                             (* 1000 (time-convert cider-log-start-time 'integer)))
-              "threads" cider-log-threads))
-
-(defun cider-log-filter-selected-p ()
-  "Return non-nil if any filter is selected, otherwise nil."
-  (or cider-log-exceptions
-      cider-log-end-time
-      cider-log-levels
-      cider-log-loggers
-      cider-log-pattern
-      cider-log-start-time
-      cider-log-threads))
 
 (defun cider-log-appender-attached-p ()
   "Return non-nil if the log appender is attached, otherwise nil."
@@ -292,15 +250,57 @@
 
   HISTORY if non-nil, specifies a history list and optionally the initial
   position in the list."
-  (let ((completion-extra-properties (cider-log--completion-extra-properties '("description"))))
-    (cider-log-framework-by-name
-     frameworks
-     (completing-read
-      (or prompt "Log framework: ")
-      (seq-map (lambda (framework)
-                 (list (cider-log-framework-name framework) framework))
-               frameworks)
-      nil nil initial-input history))))
+  )
+
+(defun cider-log--read-appender (prompt initial-input history)
+  "Read a appender from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (nrepl-dict "id" (read-string (or prompt "Log appender: ")
+                                (or initial-input cider-log-appender-id)
+                                history cider-log-appender-id)))
+
+(defun cider-log--read-buffer (&optional prompt initial-input history)
+  "Read the log buffer from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (read-string prompt initial-input history cider-log-buffer))
+
+(defun cider-log--read-exceptions (&optional prompt initial-input history)
+  "Read a list of exceptions from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (let ((table (nrepl-dict-keys (cider-sync-request:log-exceptions
+                                 cider-log-framework cider-log-appender))))
+    (completing-read-multiple prompt table nil nil initial-input history)))
+
+(defun cider-log--read-framework (&optional prompt initial-input history)
+  "Read a framework from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (let ((completion-extra-properties (cider-log--completion-extra-properties '("name")))
+        (frameworks (cider-sync-request:log-frameworks)))
+    (thread-last (completing-read
+                  (or prompt "Log framework: ")
+                  (seq-map (lambda (framework)
+                             (list (cider-log-framework-id framework) framework))
+                           frameworks)
+                  nil nil initial-input history)
+                 (cider-log-framework-by-id frameworks))))
+
+(defun cider-log--read-levels (&optional prompt initial-input history)
+  "Read a list of levels from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (let ((table (nrepl-dict-keys (cider-sync-request:log-levels
+                                 cider-log-framework cider-log-appender))))
+    (completing-read-multiple prompt table nil nil initial-input history)))
+
+(defun cider-log--read-loggers (&optional prompt initial-input history)
+  "Read a list of loggers from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (let ((table (nrepl-dict-keys (cider-sync-request:log-loggers
+                                 cider-log-framework cider-log-appender))))
+    (completing-read-multiple prompt table nil nil initial-input history)))
+
+(defun cider-log--read-threads (&optional prompt initial-input history)
+  "Read a list of threads from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (let ((table (nrepl-dict-keys (cider-sync-request:log-threads
+                                 cider-log-framework cider-log-appender))))
+    (completing-read-multiple prompt table nil nil initial-input history)))
+
+(defun cider-log--read-time (&optional prompt initial-input _)
+  "Read a time from the minibuffer using PROMPT and INITIAL-INPUT."
+  (cider-log--format-time (org-read-date t 'to-time nil prompt nil initial-input)))
 
 ;; Framework
 
@@ -338,18 +338,15 @@
     (seq-find (lambda (appender) (equal id (cider-log-appender-id appender)))
               (cider-log-framework-appenders framework))))
 
-(defun cider-log-framework-by-name (frameworks name)
-  "Find the log framework in FRAMEWORKS by NAME."
-  (seq-find (lambda (framework) (equal name (cider-log-framework-name framework))) frameworks))
-
-(defun cider-log-framework-remove-appender (framework appender)
-  "Remove the APPENDER from the log FRAMEWORK."
-  (cider-sync-request:log-remove-appender framework appender))
+(defun cider-log-framework-by-id (frameworks id)
+  "Find the log framework in FRAMEWORKS by ID."
+  (seq-find (lambda (framework) (equal id (cider-log-framework-id framework))) frameworks))
 
 (defun cider-log-framework-reload (framework)
   "Reload the log FRAMEWORK."
-  (cider-log-framework-by-name (cider-sync-request:log-frameworks)
-                               (cider-log-framework-name framework)))
+  (cider-log-framework-by-id
+   (cider-sync-request:log-frameworks)
+   (cider-log-framework-id framework)))
 
 ;; Appender
 
@@ -391,7 +388,7 @@
 ;; Consumer
 
 (defun cider-log-consumer-buffers (consumer)
-  "Find all buffers in which CONSUMER is bound to `cider-log-consumer'."
+  "Find all buffers in which `cider-log-consumer' is bound to CONSUMER."
   (seq-filter (lambda (buffer)
                 (with-current-buffer buffer
                   (and (nrepl-dict-p cider-log-consumer)
@@ -432,25 +429,12 @@
 
 ;; Major Mode
 
-(defun cider-log--reset-filters ()
-  "Reset the filters."
-  (setq cider-log-end-time nil
-        cider-log-exceptions nil
-        cider-log-levels nil
-        cider-log-loggers nil
-        cider-log-start-time nil
-        cider-log-threads nil))
-
 (defun cider-log-select-framework ()
   "Select the log framework."
   (let ((frameworks (cider-sync-request:log-frameworks)))
     (cond ((= 1 (length frameworks))
            (car frameworks))
-          (t (cider-log-completing-read-framework frameworks)))))
-
-(defun cider-log-select-appender ()
-  "Select the log appender."
-  (nrepl-dict "id" (read-string "Log appender: " cider-log-appender-id nil cider-log-appender-id)))
+          (t (cider-log--read-framework)))))
 
 (defun cider-log-framework ()
   "Return the current log framework, or select it."
@@ -458,31 +442,11 @@
 
 (defun cider-log-appender ()
   "Return the current log appender, or select it."
-  (or cider-log-appender (cider-log-select-appender)))
+  (or cider-log-appender (cider-log--read-appender nil nil nil)))
 
 (defun cider-log-consumer ()
   "Return the current log consumer."
   cider-log-consumer)
-
-(defun cider-log-add-appender ()
-  "Add the log appender to the current framework."
-  (interactive)
-  (let ((framework (setq cider-log-framework (cider-log-select-framework)))
-        (appender (setq cider-log-appender (cider-log-select-appender))))
-    (cider-log-framework-add-appender framework appender)))
-
-(defun cider-log-ensure-appender ()
-  "Ensure the current log framework and appender are initialized."
-  (unless cider-log-framework
-    (setq cider-log-framework (cider-log-select-framework)))
-  (unless cider-log-appender
-    (setq cider-log-appender (nrepl-dict "id" cider-log-appender-id))))
-
-(defun cider-log-remove-appender ()
-  "Remove the log appender from the current framework."
-  (interactive)
-  (cider-log-framework-remove-appender cider-log-framework cider-log-appender)
-  (setq cider-log-appender nil))
 
 (defun cider-log-event-at-point ()
   "Return the log event at point."
@@ -534,15 +498,6 @@
   (interactive "p")
   (cider-log-next-line (- (or n 1))))
 
-(defun cider-log-resume ()
-  "Resume streaming log events to the client."
-  (interactive)
-  (when (and cider-log-framework cider-log-appender)
-    (cider-log-show-events cider-log-framework cider-log-appender)
-    (message "Resumed %s event consumption for appender %s."
-             (cider-log--bold (cider-log-framework-name cider-log-framework))
-             (cider-log--bold (cider-log-appender-id cider-log-appender)))))
-
 (defun cider-log--remove-current-buffer-consumer ()
   "Cleanup the log consumer of the current buffer."
   (when-let ((framework cider-log-framework)
@@ -553,14 +508,6 @@
       (cider-sync-request:log-remove-consumer framework appender consumer)
       consumer)))
 
-(defun cider-log-pause ()
-  "Pause streaming log events to the client."
-  (interactive)
-  (when (cider-log--remove-current-buffer-consumer)
-    (message "Paused %s event consumption for appender %s."
-             (cider-log--bold (cider-log-framework-name cider-log-framework))
-             (cider-log--bold (cider-log-appender-id cider-log-appender)))))
-
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
@@ -569,8 +516,6 @@
     (define-key map (kbd "l c") 'cider-log-consumer-actions)
     (define-key map (kbd "l e") 'cider-log-event-actions)
     (define-key map (kbd "l l") 'cider-log)
-    (define-key map (kbd "l p") 'cider-log-pause)
-    (define-key map (kbd "l r") 'cider-log-resume)
     (define-key map (kbd "n") 'cider-log-next-line)
     (define-key map (kbd "p") 'cider-log-previous-line)
     map)
@@ -636,8 +581,9 @@
 (defun cider-log-appender-update (framework appender)
   "Update the log APPENDER of FRAMEWORK."
   (interactive (list (cider-log-framework) (cider-log-appender)))
+  ;; TODO: Get values from appender
   (thread-last (nrepl-dict
-                "filters" (cider-log-filters)
+                "filters" (cider-log--filters)
                 "id" (cider-log-appender-id appender)
                 "size" cider-log-appender-size
                 "threshold" cider-log-appender-threshold)
@@ -659,51 +605,13 @@
                (cider-log-consumer-display-name consumer)
                (cider-log-appender-display-name appender)))))
 
-;;;###autoload
-(defun cider-log-show-events (framework appender)
-  "Show the Cider log data for FRAMEWORK and  APPENDER."
-  (interactive (list (cider-log-framework) (cider-log-appender)))
-  (transient-save)
-  (let ((buffer (get-buffer-create cider-log-buffer-name)))
-    (with-current-buffer buffer
-      (let ((consumer cider-log-consumer)
-            (filters (cider-log-filters)))
-        (if (cider-log-consumer-id consumer)
-            (progn
-              (nrepl-dict-put consumer "filters" filters)
-              (cider-sync-request:log-update-consumer framework appender consumer)
-              (switch-to-buffer buffer)
-              (message "Update %s event consumer %s for appender %s."
-                       (cider-log-framework-display-name framework)
-                       (cider-log-consumer-display-name consumer)
-                       (cider-log-appender-display-name appender)))
-          (progn
-            (cider-log--search framework appender filters)
-            (cider-log-mode)
-            (setq-local cider-log-framework framework)
-            (setq-local cider-log-appender appender)
-            (cider-log-consumer-add framework appender buffer)))))))
-
-;;;###autoload
-(defun cider-log-reset ()
-  "Reset the filters and show the log events."
-  (interactive)
-  (cider-log--reset-filters)
-  (cider-log))
-
-(defun cider-log-inspect-framework ()
-  (interactive)
-  (when cider-log-framework
-    (let ((framework (cider-log-framework-reload cider-log-framework)))
-      (inspector-inspect framework))))
-
 ;; Consumer commands
 
 (defun cider-log-consumer-add (framework appender buffer)
   "Add CONSUMER to the APPENDER of the log FRAMEWORK."
   (interactive (list (cider-log-framework) (cider-log-appender) (current-buffer)))
   (cider-request:log-add-consumer
-   framework appender (nrepl-dict "filters" (cider-log-filters))
+   framework appender (nrepl-dict "filters" (cider-log--filters))
    (lambda (msg)
      (nrepl-dbind-response msg (log-add-consumer log-consumer log-event status)
        (cond ((member "done" status)
@@ -750,7 +658,7 @@
   "Update CONSUMER of the APPENDER of the log FRAMEWORK."
   (interactive (list (cider-log-framework) (cider-log-appender) (cider-log-consumer)))
   (let ((consumer (nrepl-dict "id" (cider-log-consumer-id consumer)
-                              "filters" (cider-log-filters)) ))
+                              "filters" (cider-log--filters)) ))
     (setq cider-log-consumer (cider-sync-request:log-update-consumer framework appender consumer))
     (message "Updated %s log consumer %s for appender %s."
              (cider-log-framework-display-name framework)
@@ -759,7 +667,7 @@
 
 (defun cider-log-buffer-clear-p (&optional buffer)
   "Return non-nil if BUFFER is not empty, otherwise nil."
-  (when-let (buffer (get-buffer (or buffer cider-log-buffer-name)))
+  (when-let (buffer (get-buffer (or buffer cider-log-buffer)))
     (> (buffer-size buffer) 0)))
 
 ;; Event commands
@@ -767,7 +675,7 @@
 ;;;###autoload
 (defun cider-log-event-clear-buffer (buffer)
   "Clear the Cider log events in BUFFER."
-  (interactive (list cider-log-buffer-name))
+  (interactive (list cider-log-buffer))
   (when (get-buffer buffer)
     (with-current-buffer buffer
       (let ((inhibit-read-only t))
@@ -776,9 +684,8 @@
 ;;;###autoload
 (defun cider-log-event-search (framework appender filters)
   "Search the log events of FRAMEWORK and APPENDER which match FILTERS."
-  (interactive (list (cider-log-framework) (cider-log-appender) (cider-log-filters)))
-  (transient-save)
-  (let ((buffer (get-buffer-create cider-log-buffer-name)))
+  (interactive (list (cider-log-framework) (cider-log-appender) (cider-log--filters)))
+  (let ((buffer (get-buffer-create cider-log-buffer)))
     (with-current-buffer buffer
       (cider-log--remove-current-buffer-consumer)
       (let ((events (cider-log--search framework appender filters)))
@@ -809,8 +716,6 @@
           prompt
         (format "Set %s: " (oref obj variable))))))
 
-(defclass cider-transient-time (cider-log-variable) ())
-
 (defclass cider-log-transient-framework (cider-log-variable) ())
 
 (cl-defmethod transient-format-value ((obj cider-log-transient-framework))
@@ -827,151 +732,135 @@
       (propertize (cider-log-appender-id value) 'face 'transient-value)
     ""))
 
-(cl-defmethod transient-format-value ((obj cider-transient-time))
-  "Format OBJ's value for display and return the result."
-  (if-let (value (oref obj value))
-      (propertize (format-time-string "%a, %b %d %T %Y" value) 'face 'transient-value)
-    ""))
+(defun cider-log--transient-value (argument suffixes)
+  "Return the value of the transient object matching ARGUMENT in SUFFIXES."
+  (when-let (option (thread-last
+                      suffixes
+                      (seq-filter (lambda (obj)
+                                    (and (cl-typep obj 'transient-option)
+                                         (equal argument (oref obj argument)))))
+                      (seq-first)))
+    (oref option value)))
+
+(defun cider-log--filters ()
+  "Return the log event filters."
+  (let ((suffixes (transient-suffixes transient-current-command)))
+    (nrepl-dict
+     "end-time" (when-let (time (cider-log--transient-value "--end-time=" suffixes))
+                  (* 1000 (time-convert (parse-iso8601-time-string time) 'integer)))
+     "exceptions" (cider-log--transient-value "--exceptions=" suffixes)
+     "levels" (cider-log--transient-value "--levels=" suffixes)
+     "loggers" (cider-log--transient-value "--loggers=" suffixes)
+     "pattern" (cider-log--transient-value "--pattern=" suffixes)
+     "start-time" (when-let (time (cider-log--transient-value "--start-time=" suffixes))
+                    (* 1000 (time-convert (parse-iso8601-time-string time) 'integer)))
+     "threads" (cider-log--transient-value "--threads=" suffixes))))
 
 (transient-define-infix cider-log--framework-option ()
   :always-read t
   :class 'cider-log-transient-framework
-  :description "Log framework"
+  :description "Framework"
   :key "F"
   :prompt "Log framework: "
-  :reader (lambda (prompt initial-input history)
-            (cider-log-completing-read-framework
-             (cider-sync-request:log-frameworks)
-             prompt initial-input history))
+  :reader #'cider-log--read-framework
   :variable 'cider-log-framework)
 
 (transient-define-infix cider-log--appender-option ()
   :always-read t
   :class 'cider-log-transient-appender
-  :description "Log appender "
+  :description "Appender"
   :key "A"
   :prompt "Log appender: "
-  :reader (lambda (_prompt _initial-input _history)
-            (cider-log-select-appender))
+  :reader #'cider-log--read-appender
   :variable 'cider-log-appender)
 
 (transient-define-infix cider-log--buffer-option ()
   :always-read t
   :class 'cider-log-variable
-  :description "Log buffer   "
+  :description "Buffer"
   :key "B"
   :prompt "Log buffer: "
-  :reader (lambda (prompt initial-input history)
-            (read-string prompt initial-input history cider-log-buffer-name))
-  :variable 'cider-log-buffer-name)
+  :reader #'cider-log--read-buffer
+  :variable 'cider-log-buffer)
 
 (transient-define-infix cider-log--appender-size-setting ()
   :always-read t
-  :class 'cider-log-variable
+  :argument "--size="
+  :class 'transient-option
   :description "Appender size"
   :key "=s"
   :prompt "Size: "
   :reader (lambda (prompt initial-input history)
-            (string-to-number (transient-read-number-N+ prompt initial-input history)))
-  :variable 'cider-log-appender-size)
+            (string-to-number (transient-read-number-N+ prompt initial-input history))))
 
 (transient-define-infix cider-log--appender-threshold-setting ()
   :always-read t
-  :class 'cider-log-variable
+  :argument "--threshold="
+  :class 'transient-option
   :description "Appender threshold"
   :key "=t"
   :prompt "Threshold: "
   :reader (lambda (prompt initial-input history)
-            (string-to-number (transient-read-number-N+ prompt initial-input history)))
-  :variable 'cider-log-appender-threshold)
+            (string-to-number (transient-read-number-N+ prompt initial-input history))))
 
-(transient-define-infix cider-log--exception-filter ()
-  :always-read t
-  :class 'cider-log-variable
+(transient-define-infix cider-log--exception-option ()
+  :argument "--exceptions="
+  :class 'transient-option
   :description "Filter by exceptions"
   :key "-E"
+  :multi-value t
   :prompt "Exceptions: "
-  :reader (lambda (prompt initial-input history)
-            (completing-read-multiple
-             prompt
-             (nrepl-dict-keys
-              (cider-sync-request:log-exceptions
-               cider-log-framework cider-log-appender))
-             nil nil initial-input history))
-  :variable 'cider-log-exceptions)
+  :reader #'cider-log--read-exceptions)
 
-(transient-define-infix cider-log--level-filter ()
-  :always-read t
-  :class 'cider-log-variable
+(transient-define-infix cider-log--level-option ()
+  :argument "--levels="
+  :class 'transient-option
   :description "Filter by levels"
   :key "-l"
+  :multi-value t
   :prompt "Log Levels: "
-  :reader (lambda (prompt initial-input history)
-            (completing-read-multiple
-             prompt
-             (nrepl-dict-keys
-              (cider-sync-request:log-levels
-               cider-log-framework cider-log-appender))
-             nil nil initial-input history))
-  :variable 'cider-log-levels)
+  :reader #'cider-log--read-levels)
 
-(transient-define-infix cider-log--logger-filter ()
-  :always-read t
-  :class 'cider-log-variable
+(transient-define-infix cider-log--logger-option ()
+  :argument "--loggers="
+  :class 'transient-option
   :description "Filter by loggers"
   :key "-L"
-  :variable 'cider-log-loggers
+  :multi-value t
   :prompt "Loggers: "
-  :reader (lambda (prompt initial-input history)
-            (completing-read-multiple
-             prompt
-             (nrepl-dict-keys
-              (cider-sync-request:log-loggers
-               cider-log-framework cider-log-appender))
-             nil nil initial-input history)))
+  :reader #'cider-log--read-loggers)
 
-(transient-define-infix cider-log--thread-filter ()
-  :always-read t
-  :class 'cider-log-variable
+(transient-define-infix cider-log--thread-option ()
+  :argument "--threads="
+  :class 'transient-option
   :description "Filter by threads"
   :key "-t"
+  :multi-value t
   :prompt "Threads: "
-  :variable 'cider-log-threads
-  :reader (lambda (prompt initial-input history)
-            (completing-read-multiple
-             prompt
-             (nrepl-dict-keys
-              (cider-sync-request:log-threads
-               cider-log-framework cider-log-appender))
-             nil nil initial-input history)))
+  :reader #'cider-log--read-threads)
 
-(transient-define-infix cider-log--start-time-filter ()
-  :always-read nil
-  :class 'cider-transient-time
+(transient-define-infix cider-log--start-time-option ()
+  :argument "--start-time="
+  :class 'transient-option
   :description "Filter by start time"
   :key "-s"
   :prompt "Start time: "
-  :reader (lambda (prompt initial-input _)
-            (org-read-date t 'to-time nil prompt nil (or initial-input "-30m")))
-  :variable 'cider-log-start-time)
+  :reader #'cider-log--read-time)
 
-(transient-define-infix cider-log--end-time-filter ()
-  :always-read nil
-  :class 'cider-transient-time
+(transient-define-infix cider-log--end-time-option ()
+  :argument "--end-time="
+  :class 'transient-option
   :description "Filter by end time"
   :key "-e"
   :prompt "End time: "
-  :reader (lambda (prompt initial-input _)
-            (org-read-date t 'to-time nil prompt nil initial-input))
-  :variable 'cider-log-end-time)
+  :reader #'cider-log--read-time)
 
-(transient-define-infix cider-log--pattern-filter ()
-  :always-read nil
-  :class 'cider-log-variable
+(transient-define-infix cider-log--pattern-option ()
+  :argument "--pattern="
+  :class 'transient-option
   :description "Filter by regex pattern"
   :key "-r"
   :prompt "Regex pattern: "
-  :variable 'cider-log-pattern
   :reader #'read-string)
 
 ;;;###autoload (autoload 'cider-log-appender-actions "cider-log" "Show the Cider log appender actions." t)
@@ -985,13 +874,13 @@
    (cider-log--appender-size-setting)
    (cider-log--appender-threshold-setting)]
   ["Filters:"
-   (cider-log--end-time-filter)
-   (cider-log--exception-filter)
-   (cider-log--level-filter)
-   (cider-log--logger-filter)
-   (cider-log--pattern-filter)
-   (cider-log--start-time-filter)
-   (cider-log--thread-filter)]
+   (cider-log--end-time-option)
+   (cider-log--exception-option)
+   (cider-log--level-option)
+   (cider-log--logger-option)
+   (cider-log--pattern-option)
+   (cider-log--start-time-option)
+   (cider-log--thread-option)]
   ["Actions"
    ("a" "Add log appender" cider-log-appender-add
     :inapt-if cider-log-appender-attached-p)
@@ -1010,13 +899,13 @@
    (cider-log--appender-option)
    (cider-log--buffer-option)]
   ["Filters:"
-   (cider-log--end-time-filter)
-   (cider-log--exception-filter)
-   (cider-log--level-filter)
-   (cider-log--logger-filter)
-   (cider-log--pattern-filter)
-   (cider-log--start-time-filter)
-   (cider-log--thread-filter)]
+   (cider-log--end-time-option)
+   (cider-log--exception-option)
+   (cider-log--level-option)
+   (cider-log--logger-option)
+   (cider-log--pattern-option)
+   (cider-log--start-time-option)
+   (cider-log--thread-option)]
   ["Actions"
    ("a" "Add log consumer" cider-log-consumer-add
     :inapt-if cider-log-consumer-attached-p)
@@ -1033,65 +922,22 @@
    (cider-log--appender-option)
    (cider-log--buffer-option)]
   ["Filters:"
-   (cider-log--end-time-filter)
-   (cider-log--exception-filter)
-   (cider-log--level-filter)
-   (cider-log--logger-filter)
-   (cider-log--pattern-filter)
-   (cider-log--start-time-filter)
-   (cider-log--thread-filter)]
+   (cider-log--end-time-option)
+   (cider-log--exception-option)
+   (cider-log--level-option)
+   (cider-log--logger-option)
+   (cider-log--pattern-option)
+   (cider-log--start-time-option)
+   (cider-log--thread-option)]
   ["Actions"
    ("c" "Clear log event buffer" cider-log-event-clear-buffer
     :inapt-if-not cider-log-buffer-clear-p)
    ("s" "Search log events" cider-log-event-search
     :inapt-if-not cider-log-appender-attached-p)])
 
-;; ;;;###autoload (autoload 'cider-log "cider-log" "Show the Cider log actions." t)
-;; (transient-define-prefix cider-log (framework appender)
-;;   "Show the Cider log actions."
-;;   ["Cider Log\n"
-;;    (cider-log--framework-option)
-;;    (cider-log--appender-option)]
-;;   ["Filters:"
-;;    (cider-log--end-time-filter)
-;;    (cider-log--exception-filter)
-;;    (cider-log--level-filter)
-;;    (cider-log--logger-filter)
-;;    (cider-log--pattern-filter)
-;;    (cider-log--start-time-filter)
-;;    (cider-log--thread-filter)]
-;;   [["Framework Actions"
-;;     ("j" "Browse Java documentation" cider-log-framework-browse-javadoc)
-;;     ("w" "Browse website" cider-log-framework-browse-website)]
-;;    ["Appender Actions"
-;;     ("a" "Add log appender" cider-log-appender-add
-;;      :inapt-if cider-log-appender-attached-p)
-;;     ("C" "Clear log appender" cider-log-appender-clear
-;;      :inapt-if-not cider-log-appender-attached-p)
-;;     ("D" "Remove log appender" cider-log-appender-remove
-;;      :inapt-if-not cider-log-appender-attached-p)]
-;;    ["Consumer Actions"
-;;     ("c" "Add log consumer" cider-log-consumer-add
-;;      :inapt-if cider-log-consumer-attached-p)
-;;     ("p" "Remove log consumer" cider-log-consumer-remove
-;;      :inapt-if-not cider-log-consumer-attached-p)
-;;     ("U" "Update log consumer" cider-log-consumer-update
-;;      :inapt-if-not cider-log-consumer-attached-p)]
-;;    ["Event Actions"
-;;     ("s" "Show log events" cider-log-show-events
-;;      :inapt-if-not cider-log-appender-attached-p)]]
-;;   (interactive (list (cider-log-framework) (cider-log-appender)))
-;;   (if (and cider-log-framework cider-log-appender)
-;;       (transient-setup 'cider-log)
-;;     (progn
-;;       (setq cider-log-framework framework)
-;;       (setq cider-log-appender appender)
-;;       (cider-log-appender-add framework appender)
-;;       (cider-log-consumer-add framework appender cider-log-buffer-name))))
-
-(defun cider-log (framework appender buffer)
-  "Show the Cider log actions."
-  (interactive (list (cider-log-framework) (cider-log-appender) cider-log-buffer-name))
+(defun cider-log (framework appender)
+  "Show the Cider log events for FRAMEWORK and APPENDER."
+  (interactive (list (cider-log-framework) (cider-log-appender)))
   (setq cider-log-framework framework)
   (setq cider-log-appender appender)
   (unless (cider-log-appender-reload framework appender)
