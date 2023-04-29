@@ -429,6 +429,18 @@
            (car frameworks))
           (t (cider-log--read-framework)))))
 
+;;;###autoload
+(defun cider-log-set-framework (framework)
+  "Set the Cider log framework to FRAMEWORK."
+  (interactive (list (cider-log--read-framework)))
+  (setq cider-log-framework framework))
+
+;;;###autoload
+(defun cider-log-set-buffer (buffer)
+  "Set the Cider log buffer to BUFFER."
+  (interactive (list (cider-log--read-buffer)))
+  (setq cider-log-buffer buffer))
+
 (defun cider-log--framework ()
   "Return the current log framework, or select it."
   (or cider-log-framework (cider-log-select-framework)))
@@ -530,7 +542,7 @@
 ;;;###autoload
 (defun cider-log-framework-browse-javadoc (framework)
   "Browse the Javadoc of the log FRAMEWORK."
-  (interactive (list (cider-log-select-framework)))
+  (interactive (list (cider-log--framework)))
   (browse-url (or (cider-log-framework-javadoc-url framework)
                   (user-error (format "The %s framework does not have Javadocs."
                                       (cider-log-framework-name framework))))))
@@ -538,7 +550,7 @@
 ;;;###autoload
 (defun cider-log-framework-browse-website (framework)
   "Browse the website of the log FRAMEWORK."
-  (interactive (list (cider-log-select-framework)))
+  (interactive (list (cider-log--framework)))
   (browse-url (or (cider-log-framework-website-url framework)
                   (user-error (format "The %s framework does not have a website."
                                       (cider-log-framework-name framework))))))
@@ -1029,8 +1041,8 @@
 (transient-define-prefix cider-log (framework appender)
   "Show the Cider log menu."
   [["Framework Actions"
-    ("fs" "Select log framework" cider-log-framework-browse-javadoc)
-    ("fb" "Select log buffer" cider-log-framework-browse-javadoc)
+    ("fs" "Select log framework" cider-log-set-framework :transient t)
+    ("fb" "Select log buffer" cider-log-set-buffer :transient t)
     ("fj" "Browse Java documentation" cider-log-framework-browse-javadoc)
     ("fw" "Browse website" cider-log-framework-browse-website)]
    ["Appender Actions"
