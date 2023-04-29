@@ -264,8 +264,9 @@
 
 (defun cider-log--read-exceptions (&optional prompt initial-input history)
   "Read a list of exceptions from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (let ((table (nrepl-dict-keys (cider-sync-request:log-exceptions
-                                 cider-log-framework cider-log-appender))))
+  (let ((table (when (cider-log-appender-attached-p)
+                 (nrepl-dict-keys (cider-sync-request:log-exceptions
+                                   cider-log-framework cider-log-appender)))))
     (completing-read-multiple prompt table nil nil initial-input history)))
 
 (defun cider-log--read-framework (&optional prompt initial-input history)
@@ -282,20 +283,23 @@
 
 (defun cider-log--read-levels (&optional prompt initial-input history)
   "Read a list of levels from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (let ((table (nrepl-dict-keys (cider-sync-request:log-levels
-                                 cider-log-framework cider-log-appender))))
+  (let ((table (when (cider-log-appender-attached-p)
+                 (nrepl-dict-keys (cider-sync-request:log-levels
+                                   cider-log-framework cider-log-appender)))))
     (completing-read-multiple prompt table nil nil initial-input history)))
 
 (defun cider-log--read-loggers (&optional prompt initial-input history)
   "Read a list of loggers from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (let ((table (nrepl-dict-keys (cider-sync-request:log-loggers
-                                 cider-log-framework cider-log-appender))))
+  (let ((table (when (cider-log-appender-attached-p)
+                 (nrepl-dict-keys (cider-sync-request:log-loggers
+                                   cider-log-framework cider-log-appender)))))
     (completing-read-multiple prompt table nil nil initial-input history)))
 
 (defun cider-log--read-threads (&optional prompt initial-input history)
   "Read a list of threads from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (let ((table (nrepl-dict-keys (cider-sync-request:log-threads
-                                 cider-log-framework cider-log-appender))))
+  (let ((table (when (cider-log-appender-attached-p)
+                 (nrepl-dict-keys (cider-sync-request:log-threads
+                                   cider-log-framework cider-log-appender)))))
     (completing-read-multiple prompt table nil nil initial-input history)))
 
 (defun cider-log--read-time (&optional prompt initial-input _)
