@@ -880,8 +880,7 @@
    (cider-log--thread-option)]
   ["Actions"
    ("a" "Add log appender" cider-log--do-add-appender
-    ;; :inapt-if cider-log-appender-attached-p
-    )])
+    :inapt-if cider-log-appender-attached-p)])
 
 ;;;###autoload (autoload 'cider-log-update-appender "cider-log" "Show the menu to update a Cider log appender." t)
 (transient-define-prefix cider-log-update-appender ()
