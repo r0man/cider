@@ -1046,8 +1046,7 @@
     ("fw" "Browse website" cider-log-framework-browse-website)]
    ["Appender Actions"
     ("aa" "Add log appender" cider-log-add-appender
-     ;; :inapt-if cider-log-appender-attached-p
-     )
+     :inapt-if cider-log-appender-attached-p)
     ("ac" "Clear log appender" cider-log-clear-appender
      :inapt-if-not cider-log-appender-attached-p)
     ("ak" "Kill log appender" cider-log-kill-appender
