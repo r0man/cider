@@ -924,7 +924,7 @@
     :inapt-if cider-log-appender-attached-p)
    ("c" "Clear log appender" cider-log-clear-appender
     :inapt-if-not cider-log-appender-attached-p)
-   ("k" "Remove log appender" cider-log-kill-appender
+   ("k" "Kill log appender" cider-log-kill-appender
     :inapt-if-not cider-log-appender-attached-p)
    ("u" "Update log appender" cider-log--do-update-appender
     :inapt-if-not cider-log-appender-attached-p)])
@@ -987,7 +987,7 @@
   ["Actions"
    ("a" "Add log consumer" cider-log--do-add-consumer
     :inapt-if cider-log-consumer-attached-p)
-   ("r" "Remove log consumer" cider-log--do-kill-consumer
+   ("k" "Kill log consumer" cider-log--do-kill-consumer
     :inapt-if-not cider-log-consumer-attached-p)
    ("u" "Update log consumer" cider-log--do-update-consumer
     :inapt-if-not cider-log-consumer-attached-p)])
