@@ -47,6 +47,13 @@
   :safe #'stringp
   :type 'string)
 
+(defcustom cider-log-event-buffer "*cider-log-event*"
+  "The name of the log event buffer."
+  :group 'cider
+  :package-version '(cider . "1.7.0")
+  :safe #'stringp
+  :type 'string)
+
 (defcustom cider-log-logview-p t
   "Whether or not to use Logview."
   :group 'cider
@@ -169,6 +176,20 @@
                   "event-id" ,event-id)
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "value")))
+
+(defun cider-sync-request:log-format-event (framework appender event)
+  "Format the log EVENT from the APPENDER of the log FRAMEWORK."
+  (cider-ensure-op-supported "log-format-event")
+  (thread-first
+    (seq-mapcat #'identity
+                (map-merge 'list
+                           (cider--nrepl-print-request-map fill-column)
+                           `(("op" "log-format-event")
+                             ("framework" ,(cider-log-framework-id framework))
+                             ("appender" ,(cider-log-appender-id appender))
+                             ("event-id" ,(nrepl-dict-get event "id")))))
+    (cider-nrepl-send-sync-request)
+    (nrepl-dict-get "log-format-event")))
 
 (defun cider-sync-request:log-frameworks ()
   "Return the available log frameworks."
@@ -489,27 +510,36 @@
       (seq-doseq (window windows)
         (set-window-point window (point-max))))))
 
-(defun cider-log-analyze-stacktrace-at-point ()
-  "Analyze the stacktrace of the log event at point."
-  (interactive)
-  (if-let (event (cider-log-event-at-point))
-      (if (nrepl-dict-get event "exception")
-          (let (causes)
-            (cider-request:log-analyze-stacktrace
-             cider-log-framework cider-log-appender event
-             (lambda (response)
-               (setq causes (nrepl-dbind-response response (class status)
-                              (cond (class (cons response causes))
-                                    ((and (member "done" status) causes)
-                                     (cider-stacktrace--analyze-render causes)
-                                     nil)))))))
-        (user-error "No stacktrace found for log event"))
+(defun cider-log-event-stacktrace (event)
+  "Show the stacktrace of the given log EVENT or the one at point when called interactively"
+  (interactive (list (cider-log-event-at-point)))
+  (when (and event (nrepl-dict-get event "exception"))
+    (let (causes)
+      (cider-request:log-analyze-stacktrace
+       cider-log-framework cider-log-appender event
+       (lambda (response)
+         (setq causes (nrepl-dbind-response response (class status)
+                        (cond (class (cons response causes))
+                              ((and (member "done" status) causes)
+                               (cider-stacktrace--analyze-render causes)
+                               nil)))))))))
+
+(defun cider-log-format-event (event)
+  "Format the given log EVENT or the one at point when called interactively."
+  (interactive (list (cider-log-event-at-point)))
+  (if event
+      (when-let (event (cider-sync-request:log-format-event cider-log-framework cider-log-appender event))
+        (let ((buffer (cider-popup-buffer cider-log-event-buffer nil 'clojure-mode 'ancillary)))
+          (with-current-buffer buffer
+            (let ((inhibit-read-only t))
+              (erase-buffer)
+              (insert event)))))
     (user-error "No log event found at point")))
 
-(defun cider-log-inspect-event-at-point ()
-  "Inspect the log event at point."
-  (interactive)
-  (when-let (event (cider-log-event-at-point))
+(defun cider-log-inspect-event (event)
+  "Inspect the given log EVENT or the one at point when called interactively."
+  (interactive (list (cider-log-event-at-point)))
+  (when event
     (cider-inspector--render-value
      (cider-sync-request:log-inspect-event
       cider-log-framework cider-log-appender
@@ -522,8 +552,14 @@
     (if cider-log-logview-p
         (logview-next-entry n)
       (forward-line n))
-    (when (get-buffer-window cider-inspector-buffer)
-      (save-window-excursion (cider-log-inspect-event-at-point)))))
+    (beginning-of-line)
+    (when-let (event (cider-log-event-at-point))
+      (when (get-buffer-window cider-error-buffer)
+        (save-window-excursion (cider-log-event-stacktrace event)))
+      (when (get-buffer-window cider-inspector-buffer)
+        (save-window-excursion (cider-log-inspect-event event)))
+      (when (get-buffer-window cider-log-event-buffer)
+        (save-window-excursion (cider-log-format-event event))))))
 
 (defun cider-log-previous-line (&optional n)
   "Move N lines backward."
@@ -543,13 +579,15 @@
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
-    (define-key map (kbd "RET") 'cider-log-inspect-event-at-point)
+    (define-key map (kbd "RET") 'cider-log-inspect-event)
     (define-key map (kbd "l a") 'cider-log-appender)
     (define-key map (kbd "l c") 'cider-log-consumer)
     (define-key map (kbd "l e") 'cider-log-event)
     (define-key map (kbd "l l") 'cider-log)
     (define-key map (kbd "C") 'cider-log)
-    (define-key map (kbd "E") 'cider-log-analyze-stacktrace-at-point)
+    (define-key map (kbd "E") 'cider-log-event-stacktrace)
+    (define-key map (kbd "F") 'cider-log-format-event)
+    (define-key map (kbd "I") 'cider-log-inspect-event)
     (define-key map (kbd "n") 'cider-log-next-line)
     (define-key map (kbd "p") 'cider-log-previous-line)
     map)
