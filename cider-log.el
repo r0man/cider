@@ -1068,8 +1068,8 @@
   (interactive (list (cider-log--framework) (cider-log--appender)))
   (setq cider-log-framework framework)
   (setq cider-log-appender appender)
-  (unless (cider-log-appender-reload framework appender)
-    (cider-log--do-add-appender framework appender))
+  ;; (unless (cider-log-appender-reload framework appender)
+  ;;   (cider-log--do-add-appender framework appender))
   (transient-setup 'cider-log))
 
 (add-hook 'kill-buffer-hook #'cider-log-kill-buffer)
