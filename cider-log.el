@@ -27,6 +27,7 @@
 
 (require 'cider)
 (require 'cider-inspector)
+(require 'cider-stacktrace)
 (require 'cl-lib)
 (require 'logview)
 (require 'org)
@@ -104,6 +105,15 @@
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-id appender)
                   "filters" ,(cider-log-consumer-filters consumer))
+                (cider-nrepl-send-request callback)))
+
+(defun cider-request:log-analyze-stacktrace (framework appender event &optional callback)
+  "Analyze the EVENT stacktrace of the APPENDER of FRAMEWORK and call CALLBACK."
+  (cider-ensure-op-supported "log-analyze-stacktrace")
+  (thread-first `("op" "log-analyze-stacktrace"
+                  "framework" ,(cider-log-framework-id framework)
+                  "appender" ,(cider-log-appender-id appender)
+                  "event-id" ,(nrepl-dict-get event "id"))
                 (cider-nrepl-send-request callback)))
 
 (defun cider-sync-request:log-update-consumer (framework appender consumer)
@@ -479,6 +489,23 @@
       (seq-doseq (window windows)
         (set-window-point window (point-max))))))
 
+(defun cider-log-analyze-stacktrace-at-point ()
+  "Analyze the stacktrace of the log event at point."
+  (interactive)
+  (if-let (event (cider-log-event-at-point))
+      (if (nrepl-dict-get event "exception")
+          (let (causes)
+            (cider-request:log-analyze-stacktrace
+             cider-log-framework cider-log-appender event
+             (lambda (response)
+               (setq causes (nrepl-dbind-response response (class status)
+                              (cond (class (cons response causes))
+                                    ((and (member "done" status) causes)
+                                     (cider-stacktrace--analyze-render causes)
+                                     nil)))))))
+        (user-error "No stacktrace found for log event"))
+    (user-error "No log event found at point")))
+
 (defun cider-log-inspect-event-at-point ()
   "Inspect the log event at point."
   (interactive)
@@ -522,6 +549,7 @@
     (define-key map (kbd "l e") 'cider-log-event)
     (define-key map (kbd "l l") 'cider-log)
     (define-key map (kbd "C") 'cider-log)
+    (define-key map (kbd "E") 'cider-log-analyze-stacktrace-at-point)
     (define-key map (kbd "n") 'cider-log-next-line)
     (define-key map (kbd "p") 'cider-log-previous-line)
     map)
