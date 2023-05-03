@@ -281,7 +281,7 @@
 
 (defun cider-log--read-buffer (&optional prompt initial-input history)
   "Read the log buffer from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (read-string (or prompt "Buffer: ") initial-input history cider-log-buffer))
+  (read-string (or prompt "Buffer: ") (or initial-input cider-log-buffer) history cider-log-buffer))
 
 (defun cider-log--read-exceptions (&optional prompt initial-input history)
   "Read a list of exceptions from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
