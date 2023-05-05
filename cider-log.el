@@ -518,11 +518,15 @@
       (cider-request:log-analyze-stacktrace
        cider-log-framework cider-log-appender event
        (lambda (response)
-         (setq causes (nrepl-dbind-response response (class status)
-                        (cond (class (cons response causes))
-                              ((and (member "done" status) causes)
-                               (cider-stacktrace--analyze-render causes)
-                               nil)))))))))
+         (nrepl-dbind-response response (class status)
+           (cond (class  (setq causes (cons response causes)))
+                 (status (when causes
+                           (cider-stacktrace-render
+                            (cider-popup-buffer cider-error-buffer
+                                                cider-auto-select-error-buffer
+                                                #'cider-stacktrace-mode
+                                                'ancillary)
+                            (reverse causes)))))))))))
 
 (defun cider-log-format-event (event)
   "Format the given log EVENT or the one at point when called interactively."
