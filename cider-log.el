@@ -533,11 +533,12 @@
   (interactive (list (cider-log-event-at-point)))
   (if event
       (when-let (event (cider-sync-request:log-format-event cider-log-framework cider-log-appender event))
-        (let ((buffer (cider-popup-buffer cider-log-event-buffer nil 'clojure-mode 'ancillary)))
-          (with-current-buffer buffer
-            (let ((inhibit-read-only t))
-              (erase-buffer)
-              (insert event)))))
+        (cider-popup-buffer cider-log-event-buffer cider-auto-select-error-buffer 'clojure-mode 'ancillary)
+        (with-current-buffer cider-log-event-buffer
+          (let ((inhibit-read-only t))
+            (erase-buffer)
+            (insert event)
+            (goto-char (point-min)))))
     (user-error "No log event found at point")))
 
 (defun cider-log-inspect-event (event)
