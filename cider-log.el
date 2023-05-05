@@ -554,9 +554,11 @@
   "Move N lines forward."
   (interactive "p")
   (let ((n (or n 1)))
-    (if cider-log-logview-p
-        (logview-next-entry n)
-      (forward-line n))
+    ;; TODO: When logview did not guess the mode logview-next-entry complains
+    (forward-line n)
+    ;; (if cider-log-logview-p
+    ;;     (logview-next-entry n)
+    ;;   (forward-line n))
     (beginning-of-line)
     (when-let (event (cider-log-event-at-point))
       (when (get-buffer-window cider-error-buffer)
