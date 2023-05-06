@@ -514,7 +514,8 @@
   "Show the stacktrace of the given log EVENT or the one at point when called interactively"
   (interactive (list (cider-log-event-at-point)))
   (when (and event (nrepl-dict-get event "exception"))
-    (let (causes)
+    (let ((auto-select-buffer cider-auto-select-error-buffer)
+          (causes nil))
       (cider-request:log-analyze-stacktrace
        cider-log-framework cider-log-appender event
        (lambda (response)
@@ -523,7 +524,7 @@
                  (status (when causes
                            (cider-stacktrace-render
                             (cider-popup-buffer cider-error-buffer
-                                                cider-auto-select-error-buffer
+                                                auto-select-buffer
                                                 #'cider-stacktrace-mode
                                                 'ancillary)
                             (reverse causes)))))))))))
@@ -562,7 +563,9 @@
     (beginning-of-line)
     (when-let (event (cider-log-event-at-point))
       (when (get-buffer-window cider-error-buffer)
-        (save-window-excursion (cider-log-event-stacktrace event)))
+        (save-window-excursion
+          (let ((cider-auto-select-error-buffer nil))
+            (cider-log-event-stacktrace event))))
       (when (get-buffer-window cider-inspector-buffer)
         (save-window-excursion (cider-log-inspect-event event)))
       (when (get-buffer-window cider-log-event-buffer)
