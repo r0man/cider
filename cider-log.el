@@ -941,8 +941,7 @@
   "Show the menu to add a Cider log appender."
   ["Cider Log Appender\n"
    (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
+   (cider-log--appender-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
@@ -960,8 +959,7 @@
   "Show the menu to update a Cider log appender."
   ["Cider Log Appender\n"
    (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
+   (cider-log--appender-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
@@ -979,8 +977,7 @@
   "Show the Cider log appender menu."
   ["Cider Log Appender\n"
    (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
+   (cider-log--appender-option)]
   ["Settings:"
    (cider-log--appender-size-setting)
    (cider-log--appender-threshold-setting)]
@@ -1009,8 +1006,7 @@
   "Show the menu to add a Cider log consumer."
   ["Cider Log Consumer\n"
    (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
+   (cider-log--appender-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
@@ -1028,8 +1024,7 @@
   "Show the menu to update a Cider log consumer."
   ["Cider Log Consumer\n"
    (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
+   (cider-log--appender-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
@@ -1047,8 +1042,7 @@
   "Show the Cider log consumer menu."
   ["Cider Log Consumer\n"
    (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
+   (cider-log--appender-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
