@@ -876,15 +876,6 @@
      "start-time" (cider-log--start-time-option-value suffixes)
      "threads" (cider-log--threads-option-value suffixes))))
 
-(transient-define-infix cider-log--framework-option ()
-  :always-read t
-  :class 'cider-log-transient-framework
-  :description "Framework"
-  :key "=f"
-  :prompt "Log framework: "
-  :reader #'cider-log--read-framework
-  :variable 'cider-log-framework)
-
 (transient-define-infix cider-log--appender-option ()
   :always-read t
   :class 'cider-log-transient-appender
@@ -893,6 +884,24 @@
   :prompt "Log appender: "
   :reader #'cider-log--read-appender
   :variable 'cider-log-appender)
+
+(transient-define-infix cider-log--appender-size-option ()
+  :always-read t
+  :argument "--size="
+  :class 'transient-option
+  :description "Appender size"
+  :key "=s"
+  :prompt "Size: "
+  :reader #'transient-read-number-N+)
+
+(transient-define-infix cider-log--appender-threshold-option ()
+  :always-read t
+  :argument "--threshold="
+  :class 'transient-option
+  :description "Appender threshold"
+  :key "=t"
+  :prompt "Threshold: "
+  :reader #'transient-read-number-N+)
 
 (transient-define-infix cider-log--buffer-option ()
   :always-read t
@@ -903,23 +912,13 @@
   :reader #'cider-log--read-buffer
   :variable 'cider-log-buffer)
 
-(transient-define-infix cider-log--appender-size-setting ()
-  :always-read t
-  :argument "--size="
+(transient-define-infix cider-log--end-time-option ()
+  :argument "--end-time="
   :class 'transient-option
-  :description "Appender size"
-  :key "=s"
-  :prompt "Size: "
-  :reader #'transient-read-number-N+)
-
-(transient-define-infix cider-log--appender-threshold-setting ()
-  :always-read t
-  :argument "--threshold="
-  :class 'transient-option
-  :description "Appender threshold"
-  :key "=t"
-  :prompt "Threshold: "
-  :reader #'transient-read-number-N+)
+  :description "Filter by end time"
+  :key "-e"
+  :prompt "End time: "
+  :reader #'cider-log--read-time)
 
 (transient-define-infix cider-log--exception-option ()
   :argument "--exceptions="
@@ -929,6 +928,15 @@
   :multi-value t
   :prompt "Exceptions: "
   :reader #'cider-log--read-exceptions)
+
+(transient-define-infix cider-log--framework-option ()
+  :always-read t
+  :class 'cider-log-transient-framework
+  :description "Framework"
+  :key "=f"
+  :prompt "Log framework: "
+  :reader #'cider-log--read-framework
+  :variable 'cider-log-framework)
 
 (transient-define-infix cider-log--level-option ()
   :argument "--levels="
@@ -948,14 +956,13 @@
   :prompt "Loggers: "
   :reader #'cider-log--read-loggers)
 
-(transient-define-infix cider-log--thread-option ()
-  :argument "--threads="
+(transient-define-infix cider-log--pattern-option ()
+  :argument "--pattern="
   :class 'transient-option
-  :description "Filter by threads"
-  :key "-t"
-  :multi-value t
-  :prompt "Threads: "
-  :reader #'cider-log--read-threads)
+  :description "Filter by regex pattern"
+  :key "-r"
+  :prompt "Regex pattern: "
+  :reader #'read-string)
 
 (transient-define-infix cider-log--start-time-option ()
   :argument "--start-time="
@@ -965,21 +972,14 @@
   :prompt "Start time: "
   :reader #'cider-log--read-time)
 
-(transient-define-infix cider-log--end-time-option ()
-  :argument "--end-time="
+(transient-define-infix cider-log--thread-option ()
+  :argument "--threads="
   :class 'transient-option
-  :description "Filter by end time"
-  :key "-e"
-  :prompt "End time: "
-  :reader #'cider-log--read-time)
-
-(transient-define-infix cider-log--pattern-option ()
-  :argument "--pattern="
-  :class 'transient-option
-  :description "Filter by regex pattern"
-  :key "-r"
-  :prompt "Regex pattern: "
-  :reader #'read-string)
+  :description "Filter by threads"
+  :key "-t"
+  :multi-value t
+  :prompt "Threads: "
+  :reader #'cider-log--read-threads)
 
 ;; Log Appender Transient
 
@@ -1024,8 +1024,8 @@
    (cider-log--framework-option)
    (cider-log--appender-option)]
   ["Settings:"
-   (cider-log--appender-size-setting)
-   (cider-log--appender-threshold-setting)]
+   (cider-log--appender-size-option)
+   (cider-log--appender-threshold-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
