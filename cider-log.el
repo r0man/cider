@@ -834,19 +834,47 @@
                       (seq-first)))
     (oref option value)))
 
+(defun cider-log--end-time-option-value (suffixes)
+  "Return the value of the end time option from SUFFIXES."
+  (when-let (time (cider-log--transient-value "--end-time=" suffixes))
+    (* 1000 (time-convert (parse-iso8601-time-string time) 'integer))))
+
+(defun cider-log--exceptions-option-value (suffixes)
+  "Return the value of the exceptions option from SUFFIXES."
+  (cider-log--transient-value "--exceptions=" suffixes))
+
+(defun cider-log--levels-option-value (suffixes)
+  "Return the value of the levels option from SUFFIXES."
+  (cider-log--transient-value "--levels=" suffixes))
+
+(defun cider-log--loggers-option-value (suffixes)
+  "Return the value of the loggers option from SUFFIXES."
+  (cider-log--transient-value "--loggers=" suffixes))
+
+(defun cider-log--pattern-option-value (suffixes)
+  "Return the value of the pattern option from SUFFIXES."
+  (cider-log--transient-value "--pattern=" suffixes))
+
+(defun cider-log--start-time-option-value (suffixes)
+  "Return the value of the start time option from SUFFIXES."
+  (when-let (time (cider-log--transient-value "--start-time=" suffixes))
+    (* 1000 (time-convert (parse-iso8601-time-string time) 'integer))))
+
+(defun cider-log--threads-option-value (suffixes)
+  "Return the value of the thread option from SUFFIXES."
+  (cider-log--transient-value "--threads=" suffixes))
+
 (defun cider-log--filters ()
   "Return the log event filters."
   (let ((suffixes (transient-suffixes transient-current-command)))
     (nrepl-dict
-     "end-time" (when-let (time (cider-log--transient-value "--end-time=" suffixes))
-                  (* 1000 (time-convert (parse-iso8601-time-string time) 'integer)))
-     "exceptions" (cider-log--transient-value "--exceptions=" suffixes)
-     "levels" (cider-log--transient-value "--levels=" suffixes)
-     "loggers" (cider-log--transient-value "--loggers=" suffixes)
-     "pattern" (cider-log--transient-value "--pattern=" suffixes)
-     "start-time" (when-let (time (cider-log--transient-value "--start-time=" suffixes))
-                    (* 1000 (time-convert (parse-iso8601-time-string time) 'integer)))
-     "threads" (cider-log--transient-value "--threads=" suffixes))))
+     "end-time" (cider-log--end-time-option-value suffixes)
+     "exceptions" (cider-log--exceptions-option-value suffixes)
+     "levels" (cider-log--levels-option-value suffixes)
+     "loggers" (cider-log--loggers-option-value suffixes)
+     "pattern" (cider-log--pattern-option-value suffixes)
+     "start-time" (cider-log--start-time-option-value suffixes)
+     "threads" (cider-log--threads-option-value suffixes))))
 
 (transient-define-infix cider-log--framework-option ()
   :always-read t
