@@ -910,8 +910,7 @@
   :description "Appender size"
   :key "=s"
   :prompt "Size: "
-  :reader (lambda (prompt initial-input history)
-            (transient-read-number-N+ prompt initial-input history)))
+  :reader #'transient-read-number-N+)
 
 (transient-define-infix cider-log--appender-threshold-setting ()
   :always-read t
@@ -920,8 +919,7 @@
   :description "Appender threshold"
   :key "=t"
   :prompt "Threshold: "
-  :reader (lambda (prompt initial-input history)
-            (transient-read-number-N+ prompt initial-input history)))
+  :reader #'transient-read-number-N+)
 
 (transient-define-infix cider-log--exception-option ()
   :argument "--exceptions="
