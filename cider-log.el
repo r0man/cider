@@ -777,7 +777,6 @@
 
 ;; Event commands
 
-;;;###autoload
 (transient-define-suffix cider-log-clear-events-buffer (buffer)
   "Clear the Cider log events in BUFFER."
   :description "Clear log event buffer"
@@ -983,7 +982,6 @@
 
 ;; Log Appender Transient
 
-;;;###autoload (autoload 'cider-log-add-appender "cider-log" "Show the menu to add a Cider log appender." t)
 (transient-define-prefix cider-log-add-appender ()
   "Show the menu to add a Cider log appender."
   ["Cider Log Appender\n"
@@ -1000,7 +998,6 @@
   ["Actions"
    ("a" cider-log--do-add-appender)])
 
-;;;###autoload (autoload 'cider-log-update-appender "cider-log" "Show the menu to update a Cider log appender." t)
 (transient-define-prefix cider-log-update-appender ()
   "Show the menu to update a Cider log appender."
   ["Cider Log Appender\n"
@@ -1017,7 +1014,6 @@
   ["Actions"
    ("u" cider-log--do-update-appender)])
 
-;;;###autoload (autoload 'cider-log-appender "cider-log" "Show the Cider log appender menu." t)
 (transient-define-prefix cider-log-appender ()
   "Show the Cider log appender menu."
   ["Cider Log Appender\n"
@@ -1042,7 +1038,6 @@
 
 ;; Log Consumer Transient
 
-;;;###autoload (autoload 'cider-log-add-consumer "cider-log" "Show the menu to add a Cider log consumer." t)
 (transient-define-prefix cider-log-add-consumer ()
   "Show the menu to add a Cider log consumer."
   ["Cider Log Consumer\n"
@@ -1059,7 +1054,6 @@
   ["Actions"
    ("a" cider-log--do-add-consumer)])
 
-;;;###autoload (autoload 'cider-log-update-consumer "cider-log" "Show the menu to update a Cider log consumer." t)
 (transient-define-prefix cider-log-update-consumer ()
   "Show the menu to update a Cider log consumer."
   ["Cider Log Consumer\n"
@@ -1076,7 +1070,6 @@
   ["Actions"
    ("u" cider-log--do-update-consumer)])
 
-;;;###autoload (autoload 'cider-log-consumer "cider-log" "Show the Cider log consumer menu." t)
 (transient-define-prefix cider-log-consumer ()
   "Show the Cider log consumer menu."
   ["Cider Log Consumer\n"
@@ -1097,7 +1090,6 @@
 
 ;; Log Event Transient
 
-;;;###autoload (autoload 'cider-log-search-events "cider-log" "Search the search log events menu." t)
 (transient-define-prefix cider-log-search-events ()
   "Search the search log events menu."
   ["Cider Log Event\n"
@@ -1115,7 +1107,6 @@
   ["Actions"
    ("s" cider-log--do-search-events)])
 
-;;;###autoload (autoload 'cider-log-event "cider-log" "Show the Cider log event menu." t)
 (transient-define-prefix cider-log-event ()
   "Show the Cider log event menu."
   ["Cider Log Event\n"
@@ -1134,7 +1125,7 @@
    ("c" cider-log-clear-events-buffer)
    ("s" cider-log--do-search-events)])
 
-;; Log Transient
+;; Main Transient
 
 ;;;###autoload (autoload 'cider-log "cider-log" "Show the Cider log menu." t)
 (transient-define-prefix cider-log (framework appender)
