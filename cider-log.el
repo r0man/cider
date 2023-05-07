@@ -95,16 +95,6 @@
   "Replace multiple white space characters in S with a single one."
   (replace-regexp-in-string "[\n ]+" " " s))
 
-(defun cider-log-appender-attached-p ()
-  "Return non-nil if the log appender is attached, otherwise nil."
-  (when (and cider-log-framework cider-log-appender)
-    (cider-log-appender-reload cider-log-framework cider-log-appender)))
-
-(defun cider-log-consumer-attached-p ()
-  "Return non-nil if the log consumer is attached, otherwise nil."
-  (when (and cider-log-framework cider-log-appender cider-log-consumer)
-    (cider-log-consumer-reload cider-log-framework cider-log-appender cider-log-consumer)))
-
 ;; NREPL
 
 (defun cider-request:log-add-consumer (framework appender consumer &optional callback)
@@ -377,6 +367,12 @@
 
 ;; Log Appender
 
+(defun cider-log-appender-attached-p (&optional framework appender)
+  "Return non-nil if the log APPENDER is attached to FRAMEWORK, otherwise nil."
+  (when-let ((framework (or framework cider-log-framework))
+             (appender (or appender cider-log-appender)))
+    (cider-log-appender-reload framework appender)))
+
 (defun cider-log-appender-consumers (appender)
   "Return the consumers of the log APPENDER."
   (nrepl-dict-get appender "consumers"))
@@ -413,6 +409,13 @@
     (cider-log-framework-appender-by-id framework (cider-log-appender-id appender))))
 
 ;; Log Consumer
+
+(defun cider-log-consumer-attached-p (&optional framework appender consumer)
+  "Return non-nil if the log CONSUMER is attached APPENDER and FRAMEWORK, otherwise nil."
+  (when-let ((framework (or framework cider-log-framework))
+             (appender (or appender cider-log-appender))
+             (consumer (or consumer cider-log-consumer)))
+    (cider-log-consumer-reload framework appender consumer)))
 
 (defun cider-log-consumer-id (consumer)
   "Return the id of the log CONSUMER."
