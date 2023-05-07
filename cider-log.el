@@ -892,11 +892,13 @@ OFFSET is the starting index for retrieving results."
 
 (defun cider-log--pagination-limit (suffixes)
   "Return the value of the pagination limit option from SUFFIXES."
-  (string-to-number (cider-log--transient-value "--limit=" suffixes)))
+  (when-let (value (cider-log--transient-value "--limit=" suffixes))
+    (string-to-number value)))
 
 (defun cider-log--pagination-offset (suffixes)
   "Return the value of the pagination offset option from SUFFIXES."
-  (string-to-number (cider-log--transient-value "--offset=" suffixes)))
+  (when-let (value (cider-log--transient-value "--offset=" suffixes))
+    (string-to-number value)))
 
 (transient-define-infix cider-log--appender-option ()
   :always-read t
