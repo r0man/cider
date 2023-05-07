@@ -494,7 +494,11 @@
   (get-text-property (point) :cider-log-event))
 
 (cl-defun cider-log--search (framework appender &key limit filters offset)
-  "Search the events of the log FRAMEWORK APPENDER matching FILTERS."
+  "Search captured events by APPENDER of log FRAMEWORK.
+
+LIMIT is the maximum number of events to return.
+FILTERS is a list of filters to apply to search results.
+OFFSET is the starting index for retrieving results."
   (let ((inhibit-read-only t))
     (erase-buffer)
     (let ((events (nreverse (cider-sync-request:log-search
@@ -771,9 +775,8 @@
   :description "Search log events"
   :inapt-if-not #'cider-log-appender-attached-p
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log--filters)))
-  (let ((buffer (get-buffer-create cider-log-buffer))
-        (suffixes (transient-suffixes transient-current-command)))
-    (with-current-buffer buffer
+  (with-current-buffer (get-buffer-create cider-log-buffer)
+    (let ((suffixes (transient-suffixes transient-current-command)))
       (cider-log--remove-current-buffer-consumer)
       (let ((events (cider-log--search
                      framework appender
@@ -785,7 +788,7 @@
         (setq-local cider-log-appender appender)
         (when (seq-empty-p events)
           (message "No log events found matching your search criteria."))
-        (cider-log--do-add-consumer framework appender buffer)))))
+        (cider-log--do-add-consumer framework appender (current-buffer))))))
 
 ;; Event commands
 
