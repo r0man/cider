@@ -31,6 +31,7 @@
 (require 'cl-lib)
 (require 'logview)
 (require 'org)
+(require 'seq)
 (require 'transient)
 
 (defcustom cider-log-appender-id "cider-log"
