@@ -200,14 +200,15 @@
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-frameworks")))
 
-(cl-defun cider-sync-request:log-search (framework appender &key limit filters)
+(cl-defun cider-sync-request:log-search (framework appender &key limit filters offset)
   "Search log events of FRAMEWORK and APPENDER using LIMIT and FILTERS."
   (cider-ensure-op-supported "log-search")
   (thread-first `("op" "log-search"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-id appender)
                   "filters" ,filters
-                  "limit" ,limit)
+                  "limit" ,limit
+                  "offset" ,offset)
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-search")))
 
@@ -492,11 +493,15 @@
   "Return the log event at point."
   (get-text-property (point) :cider-log-event))
 
-(defun cider-log--search (framework appender filters)
+(cl-defun cider-log--search (framework appender &key limit filters offset)
   "Search the events of the log FRAMEWORK APPENDER matching FILTERS."
   (let ((inhibit-read-only t))
     (erase-buffer)
-    (let ((events (nreverse (cider-sync-request:log-search framework appender :filters filters))))
+    (let ((events (nreverse (cider-sync-request:log-search
+                             framework appender
+                             :filters filters
+                             :limit limit
+                             :offset offset))))
       (seq-doseq (event events)
         (insert (cider-log-event--format-logback event)))
       events)))
@@ -766,10 +771,15 @@
   :description "Search log events"
   :inapt-if-not #'cider-log-appender-attached-p
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log--filters)))
-  (let ((buffer (get-buffer-create cider-log-buffer)))
+  (let ((buffer (get-buffer-create cider-log-buffer))
+        (suffixes (transient-suffixes transient-current-command)))
     (with-current-buffer buffer
       (cider-log--remove-current-buffer-consumer)
-      (let ((events (cider-log--search framework appender filters)))
+      (let ((events (cider-log--search
+                     framework appender
+                     :filters filters
+                     :limit (cider-log--pagination-limit suffixes)
+                     :offset (cider-log--pagination-offset suffixes))))
         (cider-log-mode)
         (setq-local cider-log-framework framework)
         (setq-local cider-log-appender appender)
@@ -877,6 +887,14 @@
      "start-time" (cider-log--start-time-filter suffixes)
      "threads" (cider-log--threads-filter suffixes))))
 
+(defun cider-log--pagination-limit (suffixes)
+  "Return the value of the pagination limit option from SUFFIXES."
+  (string-to-number (cider-log--transient-value "--limit=" suffixes)))
+
+(defun cider-log--pagination-offset (suffixes)
+  "Return the value of the pagination offset option from SUFFIXES."
+  (string-to-number (cider-log--transient-value "--offset=" suffixes)))
+
 (transient-define-infix cider-log--appender-option ()
   :always-read t
   :class 'cider-log-transient-appender
@@ -948,6 +966,15 @@
   :prompt "Log Levels: "
   :reader #'cider-log--read-levels)
 
+(transient-define-infix cider-log--limit-option ()
+  :always-read t
+  :argument "--limit="
+  :class 'transient-option
+  :description "Limit"
+  :key "=l"
+  :prompt "Limit: "
+  :reader #'transient-read-number-N+)
+
 (transient-define-infix cider-log--logger-option ()
   :argument "--loggers="
   :class 'transient-option
@@ -956,6 +983,15 @@
   :multi-value t
   :prompt "Loggers: "
   :reader #'cider-log--read-loggers)
+
+(transient-define-infix cider-log--offset-option ()
+  :always-read t
+  :argument "--offset="
+  :class 'transient-option
+  :description "Offset"
+  :key "=o"
+  :prompt "Offset: "
+  :reader #'transient-read-number-N0)
 
 (transient-define-infix cider-log--pattern-option ()
   :argument "--pattern="
@@ -1094,10 +1130,14 @@
 
 (transient-define-prefix cider-log-search-events ()
   "Search the search log events menu."
+  :value '("--limit=250" "--offset=0")
   ["Cider Log Event\n"
    (cider-log--framework-option)
    (cider-log--appender-option)
    (cider-log--buffer-option)]
+  ["Pagination:"
+   (cider-log--limit-option)
+   (cider-log--offset-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
@@ -1111,10 +1151,14 @@
 
 (transient-define-prefix cider-log-event ()
   "Show the Cider log event menu."
+  :value '("--limit=250" "--offset=0")
   ["Cider Log Event\n"
    (cider-log--framework-option)
    (cider-log--appender-option)
    (cider-log--buffer-option)]
+  ["Pagination:"
+   (cider-log--limit-option)
+   (cider-log--offset-option)]
   ["Filters:"
    (cider-log--end-time-option)
    (cider-log--exception-option)
