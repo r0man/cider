@@ -61,6 +61,8 @@
   :safe #'booleanp
   :type 'boolean)
 
+(defvar cider-log--initialized-p nil)
+
 (defvar cider-log-framework nil
   "The current log framework to use.")
 
@@ -1155,8 +1157,10 @@
   (interactive (list (cider-log--framework) (cider-log--appender)))
   (setq cider-log-framework framework)
   (setq cider-log-appender appender)
-  ;; (unless (cider-log-appender-reload framework appender)
-  ;;   (cider-log--do-add-appender framework appender))
+  (unless cider-log--initialized-p
+    (unless (cider-log-appender-reload framework appender)
+      (cider-log--do-add-appender framework appender)
+      (setq cider-log--initialized-p t)))
   (transient-setup 'cider-log))
 
 (add-hook 'kill-buffer-hook #'cider-log-kill-buffer)
