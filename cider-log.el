@@ -659,36 +659,23 @@
   :inapt-if-not #'cider-log-appender-attached-p
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log--filters)))
   (with-current-buffer (get-buffer-create cider-log-buffer)
-    (let ((suffixes (transient-suffixes transient-current-command)))
+    (let ((inhibit-read-only t)
+          (suffixes (transient-suffixes transient-current-command)))
       (cider-log--remove-current-buffer-consumer)
-      (let ((events (cider-log--search
+      (erase-buffer)
+      (let ((events (cider-sync-request:log-search
                      framework appender
                      :filters filters
                      :limit (cider-log--pagination-limit suffixes)
                      :offset (cider-log--pagination-offset suffixes))))
+        (seq-doseq (event (nreverse events))
+          (insert (cider-log-event--format-logback event)))
         (cider-log-mode)
         (setq-local cider-log-framework framework)
         (setq-local cider-log-appender appender)
         (when (seq-empty-p events)
-          (message "No log events found matching your search criteria."))
+          (message "No log events found."))
         (cider-log--do-add-consumer framework appender (current-buffer))))))
-
-(cl-defun cider-log--search (framework appender &key limit filters offset)
-  "Search captured events by APPENDER of log FRAMEWORK.
-
-LIMIT is the maximum number of events to return.
-FILTERS is a list of filters to apply to search results.
-OFFSET is the starting index for retrieving results."
-  (let ((inhibit-read-only t))
-    (erase-buffer)
-    (let ((events (nreverse (cider-sync-request:log-search
-                             framework appender
-                             :filters filters
-                             :limit limit
-                             :offset offset))))
-      (seq-doseq (event events)
-        (insert (cider-log-event--format-logback event)))
-      events)))
 
 (defun cider-log--insert-events (buffer events)
   "Insert the log EVENTS into BUFFER."
