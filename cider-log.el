@@ -648,7 +648,7 @@ OFFSET is the starting index for retrieving results."
                   (user-error (format "The %s framework does not have a website."
                                       (cider-log-framework-name framework))))))
 
-(transient-define-suffix cider-log-clear-appender (framework appender)
+(transient-define-suffix cider-log--do-clear-appender (framework appender)
   "Clear the log events of the APPENDER of FRAMEWORK."
   :description "Clear log appender"
   :inapt-if-not #'cider-log-appender-attached-p
@@ -658,7 +658,7 @@ OFFSET is the starting index for retrieving results."
            (cider-log-appender-display-name appender)
            (cider-log-framework-display-name framework)))
 
-(transient-define-suffix cider-log-kill-appender (framework appender)
+(transient-define-suffix cider-log--do-kill-appender (framework appender)
   "Remove the log APPENDER from FRAMEWORK."
   :description "Kill log appender"
   :inapt-if-not #'cider-log-appender-attached-p
@@ -796,7 +796,7 @@ OFFSET is the starting index for retrieving results."
 
 ;; Event commands
 
-(transient-define-suffix cider-log-clear-events-buffer (buffer)
+(transient-define-suffix cider-log--do-clear-buffer (buffer)
   "Clear the Cider log events in BUFFER."
   :description "Clear log event buffer"
   :inapt-if-not #'cider-log-buffer-clear-p
@@ -1079,8 +1079,8 @@ OFFSET is the starting index for retrieving results."
    (cider-log--thread-option)]
   ["Actions"
    ("a" cider-log--do-add-appender)
-   ("c" cider-log-clear-appender)
-   ("k" cider-log-kill-appender)
+   ("c" cider-log--do-clear-appender)
+   ("k" cider-log--do-kill-appender)
    ("u" cider-log--do-update-appender)])
 
 ;; Log Consumer Transient
@@ -1177,7 +1177,7 @@ OFFSET is the starting index for retrieving results."
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("c" cider-log-clear-events-buffer)
+   ("c" cider-log--do-clear-buffer)
    ("s" cider-log--do-search-events)])
 
 ;; Main Transient
@@ -1193,8 +1193,8 @@ OFFSET is the starting index for retrieving results."
    ["Appender Actions"
     ("aa" "Add log appender" cider-log-add-appender
      :inapt-if cider-log-appender-attached-p)
-    ("ac" cider-log-clear-appender)
-    ("ak" cider-log-kill-appender)
+    ("ac" cider-log--do-clear-appender)
+    ("ak" cider-log--do-kill-appender)
     ("au" "Update log appender" cider-log-update-appender
      :inapt-if-not cider-log-appender-attached-p)]
    ["Consumer Actions"
@@ -1204,7 +1204,7 @@ OFFSET is the starting index for retrieving results."
     ("cu" "Update log consumer" cider-log-update-consumer
      :inapt-if-not cider-log-consumer-attached-p)]
    ["Event Actions"
-    ("ec" cider-log-clear-events-buffer)
+    ("ec" cider-log--do-clear-buffer)
     ("es" "Search log events" cider-log-search-events
      :inapt-if-not cider-log-appender-attached-p)]]
   (interactive (list (cider-log--framework) (cider-log--appender)))
