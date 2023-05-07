@@ -497,140 +497,7 @@
   "Return the log event at point."
   (get-text-property (point) :cider-log-event))
 
-(cl-defun cider-log--search (framework appender &key limit filters offset)
-  "Search captured events by APPENDER of log FRAMEWORK.
-
-LIMIT is the maximum number of events to return.
-FILTERS is a list of filters to apply to search results.
-OFFSET is the starting index for retrieving results."
-  (let ((inhibit-read-only t))
-    (erase-buffer)
-    (let ((events (nreverse (cider-sync-request:log-search
-                             framework appender
-                             :filters filters
-                             :limit limit
-                             :offset offset))))
-      (seq-doseq (event events)
-        (insert (cider-log-event--format-logback event)))
-      events)))
-
-(defun cider-log--insert-events (buffer events)
-  "Insert the log EVENTS into BUFFER."
-  (with-current-buffer (get-buffer-create buffer)
-    (let ((windows (seq-filter (lambda (window) (= (window-point window) (point-max)))
-                               (get-buffer-window-list buffer))))
-      (save-excursion
-        (let ((inhibit-read-only t))
-          (goto-char (point-max))
-          (seq-doseq (event events)
-            (insert (cider-log-event--format-logback event)))))
-      (seq-doseq (window windows)
-        (set-window-point window (point-max))))))
-
-(defun cider-log-event-stacktrace (framework appender event)
-  "Show the stacktrace of the log EVENT of FRAMEWORK and APPENDER."
-  (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
-  (when (and event (nrepl-dict-get event "exception"))
-    (let ((auto-select-buffer cider-auto-select-error-buffer)
-          (causes nil))
-      (cider-request:log-analyze-stacktrace
-       framework appender event
-       (lambda (response)
-         (nrepl-dbind-response response (class status)
-           (cond (class  (setq causes (cons response causes)))
-                 (status (when causes
-                           (cider-stacktrace-render
-                            (cider-popup-buffer cider-error-buffer
-                                                auto-select-buffer
-                                                #'cider-stacktrace-mode
-                                                'ancillary)
-                            (reverse causes)))))))))))
-
-(defun cider-log-format-event (framework appender event)
-  "Format the log EVENT of FRAMEWORK and APPENDER."
-  (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
-  (if event
-      (when-let (event (cider-sync-request:log-format-event framework appender event))
-        (cider-popup-buffer cider-log-event-buffer cider-auto-select-error-buffer 'clojure-mode 'ancillary)
-        (with-current-buffer cider-log-event-buffer
-          (let ((inhibit-read-only t))
-            (erase-buffer)
-            (insert event)
-            (goto-char (point-min)))))
-    (user-error "No log event found at point")))
-
-(defun cider-log-inspect-event (framework appender event)
-  "Inspect the log EVENT of FRAMEWORK and APPENDER."
-  (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
-  (when event
-    (cider-inspector--render-value
-     (cider-sync-request:log-inspect-event
-      framework appender (nrepl-dict-get event "id")))))
-
-(defun cider-log-next-line (&optional n)
-  "Move N lines forward."
-  (interactive "p")
-  (let ((n (or n 1)))
-    ;; TODO: When logview did not guess the mode logview-next-entry complains
-    (forward-line n)
-    ;; (if cider-log-logview-p
-    ;;     (logview-next-entry n)
-    ;;   (forward-line n))
-    (beginning-of-line)
-    (when-let ((framework cider-log-framework)
-               (appender cider-log-appender)
-               (event (cider-log-event-at-point)))
-      (let ((cider-auto-select-error-buffer nil))
-        (when (get-buffer-window cider-error-buffer)
-          (save-window-excursion (cider-log-event-stacktrace framework appender event)))
-        (when (get-buffer-window cider-inspector-buffer)
-          (save-window-excursion (cider-log-inspect-event framework appender event)))
-        (when (get-buffer-window cider-log-event-buffer)
-          (save-window-excursion (cider-log-format-event framework appender event)))))))
-
-(defun cider-log-previous-line (&optional n)
-  "Move N lines backward."
-  (interactive "p")
-  (cider-log-next-line (- (or n 1))))
-
-(defun cider-log--remove-current-buffer-consumer ()
-  "Cleanup the log consumer of the current buffer."
-  (when-let ((framework cider-log-framework)
-             (appender cider-log-appender)
-             (consumer cider-log-consumer))
-    (setq-local cider-log-consumer nil)
-    (when-let (consumer (cider-log-consumer-reload framework appender consumer))
-      (cider-sync-request:log-remove-consumer framework appender consumer)
-      consumer)))
-
-(defvar cider-log-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map logview-mode-map)
-    (define-key map (kbd "RET") 'cider-log-inspect-event)
-    (define-key map (kbd "l a") 'cider-log-appender)
-    (define-key map (kbd "l c") 'cider-log-consumer)
-    (define-key map (kbd "l e") 'cider-log-event)
-    (define-key map (kbd "l l") 'cider-log)
-    (define-key map (kbd "C") 'cider-log)
-    (define-key map (kbd "E") 'cider-log-event-stacktrace)
-    (define-key map (kbd "F") 'cider-log-format-event)
-    (define-key map (kbd "I") 'cider-log-inspect-event)
-    (define-key map (kbd "n") 'cider-log-next-line)
-    (define-key map (kbd "p") 'cider-log-previous-line)
-    map)
-  "The Cider log stream mode key map.")
-
-(define-derived-mode cider-log-mode logview-mode "Cider Log"
-  "Major mode for inspecting Clojure log events.
-
-\\{cider-log-mode-map}"
-  (use-local-map cider-log-mode-map)
-  (setq-local electric-indent-chars nil)
-  (setq-local logview-show-ellipses nil)
-  (setq-local sesman-system 'CIDER)
-  (setq-local truncate-lines t)
-  (when (fboundp 'evil-set-initial-state)
-    (evil-set-initial-state 'cider-log-mode 'emacs)))
+;; Framework actions
 
 (transient-define-suffix cider-log-framework-browse-javadoc (framework)
   "Browse the Javadoc of the log FRAMEWORK."
@@ -647,6 +514,8 @@ OFFSET is the starting index for retrieving results."
   (browse-url (or (cider-log-framework-website-url framework)
                   (user-error (format "The %s framework does not have a website."
                                       (cider-log-framework-name framework))))))
+
+;; Appender actions
 
 (transient-define-suffix cider-log--do-clear-appender (framework appender)
   "Clear the log events of the APPENDER of FRAMEWORK."
@@ -696,19 +565,7 @@ OFFSET is the starting index for retrieving results."
            (cider-log-appender-display-name appender)
            (cider-log-framework-display-name framework)))
 
-(defun cider-log-kill-buffer ()
-  "Called from `kill-buffer-hook' to remove the consumer."
-  (when (eq 'cider-log-mode major-mode)
-    (when-let ((framework cider-log-framework)
-               (appender cider-log-appender)
-               (consumer cider-log-consumer))
-      (cider-log--remove-current-buffer-consumer)
-      (message "Removed %s event consumer %s from appender %s."
-               (cider-log-framework-display-name framework)
-               (cider-log-consumer-display-name consumer)
-               (cider-log-appender-display-name appender)))))
-
-;; Consumer commands
+;; Consumer actions
 
 (transient-define-suffix cider-log--do-add-consumer (framework appender buffer)
   "Add CONSUMER to the APPENDER of the log FRAMEWORK."
@@ -774,6 +631,28 @@ OFFSET is the starting index for retrieving results."
              (cider-log-consumer-display-name consumer)
              (cider-log-appender-display-name appender))))
 
+(defun cider-log--remove-current-buffer-consumer ()
+  "Cleanup the log consumer of the current buffer."
+  (when-let ((framework cider-log-framework)
+             (appender cider-log-appender)
+             (consumer cider-log-consumer))
+    (setq-local cider-log-consumer nil)
+    (when-let (consumer (cider-log-consumer-reload framework appender consumer))
+      (cider-sync-request:log-remove-consumer framework appender consumer)
+      consumer)))
+
+;; Event actions
+
+(transient-define-suffix cider-log--do-clear-buffer (buffer)
+  "Clear the Cider log events in BUFFER."
+  :description "Clear log event buffer"
+  :inapt-if-not #'cider-log-buffer-clear-p
+  (interactive (list cider-log-buffer))
+  (when (get-buffer buffer)
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)))))
+
 (transient-define-suffix cider-log--do-search-events (framework appender filters)
   "Search the log events of FRAMEWORK and APPENDER which match FILTERS."
   :description "Search log events"
@@ -794,19 +673,103 @@ OFFSET is the starting index for retrieving results."
           (message "No log events found matching your search criteria."))
         (cider-log--do-add-consumer framework appender (current-buffer))))))
 
-;; Event commands
+(cl-defun cider-log--search (framework appender &key limit filters offset)
+  "Search captured events by APPENDER of log FRAMEWORK.
 
-(transient-define-suffix cider-log--do-clear-buffer (buffer)
-  "Clear the Cider log events in BUFFER."
-  :description "Clear log event buffer"
-  :inapt-if-not #'cider-log-buffer-clear-p
-  (interactive (list cider-log-buffer))
-  (when (get-buffer buffer)
-    (with-current-buffer buffer
-      (let ((inhibit-read-only t))
-        (erase-buffer)))))
+LIMIT is the maximum number of events to return.
+FILTERS is a list of filters to apply to search results.
+OFFSET is the starting index for retrieving results."
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (let ((events (nreverse (cider-sync-request:log-search
+                             framework appender
+                             :filters filters
+                             :limit limit
+                             :offset offset))))
+      (seq-doseq (event events)
+        (insert (cider-log-event--format-logback event)))
+      events)))
 
-;; Transient
+(defun cider-log--insert-events (buffer events)
+  "Insert the log EVENTS into BUFFER."
+  (with-current-buffer (get-buffer-create buffer)
+    (let ((windows (seq-filter (lambda (window) (= (window-point window) (point-max)))
+                               (get-buffer-window-list buffer))))
+      (save-excursion
+        (let ((inhibit-read-only t))
+          (goto-char (point-max))
+          (seq-doseq (event events)
+            (insert (cider-log-event--format-logback event)))))
+      (seq-doseq (window windows)
+        (set-window-point window (point-max))))))
+
+(defun cider-log-event-show-stacktrace (framework appender event)
+  "Show the stacktrace of the log EVENT of FRAMEWORK and APPENDER."
+  (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
+  (when (and event (nrepl-dict-get event "exception"))
+    (let ((auto-select-buffer cider-auto-select-error-buffer)
+          (causes nil))
+      (cider-request:log-analyze-stacktrace
+       framework appender event
+       (lambda (response)
+         (nrepl-dbind-response response (class status)
+           (cond (class  (setq causes (cons response causes)))
+                 (status (when causes
+                           (cider-stacktrace-render
+                            (cider-popup-buffer cider-error-buffer
+                                                auto-select-buffer
+                                                #'cider-stacktrace-mode
+                                                'ancillary)
+                            (reverse causes)))))))))))
+
+(defun cider-log-event-pretty-print (framework appender event)
+  "Format the log EVENT of FRAMEWORK and APPENDER."
+  (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
+  (if event
+      (when-let (event (cider-sync-request:log-format-event framework appender event))
+        (cider-popup-buffer cider-log-event-buffer cider-auto-select-error-buffer 'clojure-mode 'ancillary)
+        (with-current-buffer cider-log-event-buffer
+          (let ((inhibit-read-only t))
+            (erase-buffer)
+            (insert event)
+            (goto-char (point-min)))))
+    (user-error "No log event found at point")))
+
+(defun cider-log-event-inspect (framework appender event)
+  "Inspect the log EVENT of FRAMEWORK and APPENDER."
+  (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
+  (when event
+    (cider-inspector--render-value
+     (cider-sync-request:log-inspect-event
+      framework appender (nrepl-dict-get event "id")))))
+
+(defun cider-log-event-next-line (&optional n)
+  "Move N lines forward."
+  (interactive "p")
+  (let ((n (or n 1)))
+    ;; TODO: When logview did not guess the mode logview-next-entry complains
+    (forward-line n)
+    ;; (if cider-log-logview-p
+    ;;     (logview-next-entry n)
+    ;;   (forward-line n))
+    (beginning-of-line)
+    (when-let ((framework cider-log-framework)
+               (appender cider-log-appender)
+               (event (cider-log-event-at-point)))
+      (let ((cider-auto-select-error-buffer nil))
+        (when (get-buffer-window cider-error-buffer)
+          (save-window-excursion (cider-log-event-show-stacktrace framework appender event)))
+        (when (get-buffer-window cider-inspector-buffer)
+          (save-window-excursion (cider-log-event-inspect framework appender event)))
+        (when (get-buffer-window cider-log-event-buffer)
+          (save-window-excursion (cider-log-event-pretty-print framework appender event)))))))
+
+(defun cider-log-event-previous-line (&optional n)
+  "Move N lines backward."
+  (interactive "p")
+  (cider-log-event-next-line (- (or n 1))))
+
+;; Transient variables
 
 (defclass cider-log-variable (transient-lisp-variable) ())
 
@@ -841,6 +804,8 @@ OFFSET is the starting index for retrieving results."
   (if-let (value (oref obj value))
       (propertize (cider-log-appender-id value) 'face 'transient-value)
     ""))
+
+;; Transient values
 
 (defun cider-log--transient-value (argument suffixes)
   "Return the value of the transient object matching ARGUMENT in SUFFIXES."
@@ -903,6 +868,8 @@ OFFSET is the starting index for retrieving results."
   "Return the value of the pagination offset option from SUFFIXES."
   (when-let (value (cider-log--transient-value "--offset=" suffixes))
     (string-to-number value)))
+
+;; Transient options
 
 (transient-define-infix cider-log--appender-option ()
   :always-read t
@@ -1027,7 +994,7 @@ OFFSET is the starting index for retrieving results."
   :prompt "Threads: "
   :reader #'cider-log--read-threads)
 
-;; Log Appender Transient
+;; Log Appender Transients
 
 (transient-define-prefix cider-log-add-appender ()
   "Show the menu to add a Cider log appender."
@@ -1083,7 +1050,7 @@ OFFSET is the starting index for retrieving results."
    ("k" cider-log--do-kill-appender)
    ("u" cider-log--do-update-appender)])
 
-;; Log Consumer Transient
+;; Log Consumer Transients
 
 (transient-define-prefix cider-log-add-consumer ()
   "Show the menu to add a Cider log consumer."
@@ -1135,7 +1102,7 @@ OFFSET is the starting index for retrieving results."
    ("k" cider-log--do-kill-consumer)
    ("u" cider-log--do-update-consumer)])
 
-;; Log Event Transient
+;; Log Event Transients
 
 (transient-define-prefix cider-log-search-events ()
   "Search the search log events menu."
@@ -1215,6 +1182,49 @@ OFFSET is the starting index for retrieving results."
       (cider-log--do-add-appender framework appender)
       (setq cider-log--initialized-p t)))
   (transient-setup 'cider-log))
+
+;; Major mode
+
+(defvar cider-log-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map logview-mode-map)
+    (define-key map (kbd "RET") 'cider-log-event-inspect)
+    (define-key map (kbd "l a") 'cider-log-appender)
+    (define-key map (kbd "l c") 'cider-log-consumer)
+    (define-key map (kbd "l e") 'cider-log-event)
+    (define-key map (kbd "l l") 'cider-log)
+    (define-key map (kbd "C") 'cider-log)
+    (define-key map (kbd "E") 'cider-log-event-show-stacktrace)
+    (define-key map (kbd "F") 'cider-log-event-pretty-print)
+    (define-key map (kbd "I") 'cider-log-event-inspect)
+    (define-key map (kbd "n") 'cider-log-event-next-line)
+    (define-key map (kbd "p") 'cider-log-event-previous-line)
+    map)
+  "The Cider log stream mode key map.")
+
+(define-derived-mode cider-log-mode logview-mode "Cider Log"
+  "Major mode for inspecting Clojure log events.
+
+\\{cider-log-mode-map}"
+  (use-local-map cider-log-mode-map)
+  (setq-local electric-indent-chars nil)
+  (setq-local logview-show-ellipses nil)
+  (setq-local sesman-system 'CIDER)
+  (setq-local truncate-lines t)
+  (when (fboundp 'evil-set-initial-state)
+    (evil-set-initial-state 'cider-log-mode 'emacs)))
+
+(defun cider-log-kill-buffer ()
+  "Called from `kill-buffer-hook' to remove the consumer."
+  (when (eq 'cider-log-mode major-mode)
+    (when-let ((framework cider-log-framework)
+               (appender cider-log-appender)
+               (consumer cider-log-consumer))
+      (cider-log--remove-current-buffer-consumer)
+      (message "Removed %s event consumer %s from appender %s."
+               (cider-log-framework-display-name framework)
+               (cider-log-consumer-display-name consumer)
+               (cider-log-appender-display-name appender)))))
 
 (add-hook 'kill-buffer-hook #'cider-log-kill-buffer)
 
