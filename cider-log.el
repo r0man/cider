@@ -25,7 +25,6 @@
 
 ;;; Code:
 
-(require 'cider)
 (require 'cider-inspector)
 (require 'cider-stacktrace)
 (require 'cl-lib)
@@ -1175,15 +1174,15 @@
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
-    (define-key map (kbd "RET") 'cider-log-event-inspect)
-    (define-key map (kbd "l a") 'cider-log-appender)
-    (define-key map (kbd "l c") 'cider-log-consumer)
-    (define-key map (kbd "l e") 'cider-log-event)
-    (define-key map (kbd "l l") 'cider-log)
     (define-key map (kbd "C") 'cider-log)
+    (define-key map (kbd "C-c l a") #'cider-log-appender)
+    (define-key map (kbd "C-c l c") #'cider-log-consumer)
+    (define-key map (kbd "C-c l e") #'cider-log-event)
+    (define-key map (kbd "C-c l l") #'cider-log)
     (define-key map (kbd "E") 'cider-log-event-show-stacktrace)
     (define-key map (kbd "F") 'cider-log-event-pretty-print)
     (define-key map (kbd "I") 'cider-log-event-inspect)
+    (define-key map (kbd "RET") 'cider-log-event-inspect)
     (define-key map (kbd "n") 'cider-log-event-next-line)
     (define-key map (kbd "p") 'cider-log-event-previous-line)
     map)
