@@ -470,14 +470,12 @@
 (transient-define-suffix cider-log-set-framework (framework)
   "Set the Cider log framework to FRAMEWORK."
   :description "Select log framework"
-  :transient t
   (interactive (list (cider-log--read-framework)))
   (setq cider-log-framework framework))
 
 (transient-define-suffix cider-log-set-buffer (buffer)
   "Set the Cider log buffer to BUFFER."
   :description "Select log buffer"
-  :transient t
   (interactive (list (cider-log--read-buffer)))
   (setq cider-log-buffer buffer))
 
