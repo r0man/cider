@@ -55,6 +55,20 @@
   :safe #'stringp
   :type 'string)
 
+(defcustom cider-log-pagination-limit 250
+  "The maximum number of log events to return when searching events."
+  :group 'cider
+  :package-version '(cider . "1.7.0")
+  :safe #'integerp
+  :type 'integer)
+
+(defcustom cider-log-pagination-offset 0
+  "The offset from which to return results when searching events."
+  :group 'cider
+  :package-version '(cider . "1.7.0")
+  :safe #'integerp
+  :type 'integer)
+
 (defcustom cider-log-logview-p t
   "Whether or not to use Logview."
   :group 'cider
@@ -664,8 +678,8 @@
       (let ((events (cider-sync-request:log-search
                      framework appender
                      :filters filters
-                     :limit (cider-log--pagination-limit suffixes)
-                     :offset (cider-log--pagination-offset suffixes))))
+                     :limit cider-log-pagination-limit
+                     :offset cider-log-pagination-offset)))
         (seq-doseq (event (nreverse events))
           (insert (cider-log-event--format-logback event)))
         (cider-log-mode)
@@ -844,20 +858,9 @@
      "start-time" (cider-log--start-time-filter suffixes)
      "threads" (cider-log--threads-filter suffixes))))
 
-(defun cider-log--pagination-limit (suffixes)
-  "Return the value of the pagination limit option from SUFFIXES."
-  (when-let (value (cider-log--transient-value "--limit=" suffixes))
-    (string-to-number value)))
-
-(defun cider-log--pagination-offset (suffixes)
-  "Return the value of the pagination offset option from SUFFIXES."
-  (when-let (value (cider-log--transient-value "--offset=" suffixes))
-    (string-to-number value)))
-
 ;; Transient options
 
 (transient-define-infix cider-log--appender-option ()
-  :always-read t
   :class 'cider-log-transient-appender
   :description "Appender"
   :key "=a"
@@ -866,7 +869,6 @@
   :variable 'cider-log-appender)
 
 (transient-define-infix cider-log--appender-size-option ()
-  :always-read t
   :argument "--size="
   :class 'transient-option
   :description "Appender size"
@@ -884,7 +886,6 @@
   :reader #'transient-read-number-N+)
 
 (transient-define-infix cider-log--buffer-option ()
-  :always-read t
   :class 'cider-log-variable
   :description "Buffer"
   :key "=b"
@@ -910,7 +911,6 @@
   :reader #'cider-log--read-exceptions)
 
 (transient-define-infix cider-log--framework-option ()
-  :always-read t
   :class 'cider-log-transient-framework
   :description "Framework"
   :key "=f"
@@ -928,13 +928,14 @@
   :reader #'cider-log--read-levels)
 
 (transient-define-infix cider-log--limit-option ()
-  :always-read t
-  :argument "--limit="
-  :class 'transient-option
+  :class 'cider-log-variable
   :description "Limit"
   :key "=l"
   :prompt "Limit: "
-  :reader #'transient-read-number-N+)
+  :reader (lambda (prompt initial-input history)
+            (when-let (value (transient-read-number-N+ prompt initial-input history))
+              (string-to-number value)))
+  :variable 'cider-log-pagination-limit)
 
 (transient-define-infix cider-log--logger-option ()
   :argument "--loggers="
@@ -946,13 +947,14 @@
   :reader #'cider-log--read-loggers)
 
 (transient-define-infix cider-log--offset-option ()
-  :always-read t
-  :argument "--offset="
-  :class 'transient-option
+  :class 'cider-log-variable
   :description "Offset"
   :key "=o"
   :prompt "Offset: "
-  :reader #'transient-read-number-N0)
+  :reader (lambda (prompt initial-input history)
+            (when-let (value (transient-read-number-N0 prompt initial-input history))
+              (string-to-number value)))
+  :variable 'cider-log-pagination-offset)
 
 (transient-define-infix cider-log--pattern-option ()
   :argument "--pattern="
