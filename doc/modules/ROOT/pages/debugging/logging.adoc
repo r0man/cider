@@ -1,0 +1,26 @@
+= Logging
+:experimental:
+
+== Usage
+
+== Keybindings
+
+|===
+| Command | Keyboard shortcut | Description
+
+| `cider-log`
+| kbd:[C-c l l]
+| Show the Cider log menu.
+
+| `cider-log-appender`
+| kbd:[C-c l a]
+| Show the menu to manage appenders of a logging framework.
+
+| `cider-log-consumer`
+| kbd:[C-c l c]
+| Show the menu to manage consumers listening to log events.
+
+| `cider-log-event`
+| kbd:[C-c l e]
+| Show the menu to manage log events.
+|===
