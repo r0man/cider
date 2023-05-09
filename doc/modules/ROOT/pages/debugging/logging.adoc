@@ -26,11 +26,11 @@ To view log events and stream them to your client, type kbd:[es]
 also add a log consumer to this buffer, which receives newly-arriving
 log events.
 
-Note that the `+*cider-log*+` buffer might initially be empty, and you
-may see a `No log events found.` message. This is because nothing has
-been logged between adding the appender and searching for events. So,
-now would be a good time to run some code that triggers a log event
-for the selected framework.
+NOTE: The `+*cider-log*+` buffer might initially be empty, and you may
+see a `No log events found.` message. This is because nothing has been
+logged between adding the appender and searching for events. So, now
+would be a good time to run some code that triggers a log event for
+the selected framework.
 
 === Keybindings
 
