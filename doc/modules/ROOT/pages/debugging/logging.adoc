@@ -9,11 +9,11 @@ clients.
 == Usage
 
 To use Cider Log Mode, type kbd:[C-c l l] (`cider-log`) in any buffer
-that has a Sesman session attached to it. The first time you run the
-command, it will prompt you to select a log framework to use, and then
-attach a log appender to the root logger of the selected
-framework. After the log appender has been attached, the `cider-log`
-command will show a
+that has a Cider https://github.com/vspinu/sesman[Sesman] session
+attached to it. The first time you run the command, it will prompt you
+to select a log framework to use, and then attach a log appender to
+the root logger of the selected framework. After the log appender has
+been attached, the `cider-log` command will show a
 https://www.gnu.org/software/emacs/manual/html_mono/transient.html[Transient]
 menu, from which you can take further actions, like managing the log
 framework, appenders, consumers and events.
