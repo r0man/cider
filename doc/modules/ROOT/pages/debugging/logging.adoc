@@ -9,10 +9,11 @@ to clients.
 image::cider-log.png[CIDER Log]
 
 NOTE: The screenshot displays the list of log events in the
-`*cider-log*` buffer on the left. To the right, a log event is visible
-in the `*cider-inspect*` buffer, where the exception of the event is
-also displayed in the Cider Debugger. From the debugger you can jump
-to the source of each frame.
+`+*cider-log*+` buffer on the left. To the right, a log event is
+visible in the `+*cider-inspect*+` buffer, where the exception of the
+event is also displayed in the Cider Debugger. From the debugger you
+can jump to the source of each frame. At the bottom the Cider log menu
+is shown from which you can perform logging related actions.
 
 == Usage
 
