@@ -19,6 +19,7 @@ is shown from which you can perform logging related actions.
 
 == Features
 
+- Browse Javadocs and website of log framework.
 - Search log events and show them in buffers.
 - Pretty print log events.
 - Show log events in the Cider link:inspector.html[Inspector]
