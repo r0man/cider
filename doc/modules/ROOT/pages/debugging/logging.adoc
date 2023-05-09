@@ -1,10 +1,10 @@
 = Logging
 :experimental:
 
-Cider Log Mode allows you to capture, view and inspect log events
-emitted by Java logging frameworks. The captured log events can be
-searched, viewed in the Cider Inspector and Debugger and streamed to
-clients.
+Cider Log Mode allows you to capture, view, debug and inspect log
+events emitted by Java logging frameworks. The captured log events can
+be searched, viewed in the Cider Inspector and Debugger and streamed
+to clients.
 
 image::cider-log.png[CIDER Log]
 
@@ -205,4 +205,34 @@ The following keybindings can be used to interact with log events.
 | `cider-log-event-search`
 | kbd:[C-c l e s]
 | Search log events and show them in the `+*cider-log*+` buffer.
+|===
+
+== Log Filters
+
+Filters for log events can be attached to log appenders, consumers and
+take effect when searching events. The following filters are available:
+
+|===
+| Filter | Description
+
+| `end-time`
+| Only include log events that were emitted before `end-time`.
+
+| `exceptions`
+| Only include log events caused by an exception in the list of `exceptions`.
+
+| `levels`
+| Only include log events with a log level in the list of `levels`.
+
+| `loggers`
+| Only include log events that were emitted by a logger in the list of `loggers`.
+
+| `pattern`
+| Only include log events whose message matcches the regular expression `pattern`.
+
+| `start-time`
+| Only include log events that were emitted at, or after `start-time`.
+
+| `threads`
+| Only include log events that were emitted by a thread in the list of `threads`.
 |===
