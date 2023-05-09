@@ -1166,7 +1166,7 @@
     ("ca" "Add log consumer" cider-log-consumer-add
      :inapt-if cider-log-consumer-attached-p)
     ("ck" cider-log-consumer-kill)
-    ("cu" "Update log consumer" cider-log-update-consumer
+    ("cu" "Update log consumer" cider-log-consumer-update
      :inapt-if-not cider-log-consumer-attached-p)]
    ["Event Actions"
     ("ec" cider-log-event-clear-buffer)
