@@ -1,10 +1,12 @@
 = Logging
 :experimental:
 
-Cider Log Mode allows you to capture, view, debug and inspect log
+Cider Log Mode allows you to capture, debug, inspect and view log
 events emitted by Java logging frameworks. The captured log events can
-be searched, viewed in the Cider Inspector and Debugger and streamed
-to clients.
+be searched, streamed to the client, pretty printed and are integrated
+with the Cider link:inspector.adoc[Inspector] and
+link:debugger.adoc[Debugger]. Here is a screenshot of Cider Log Mode
+in action.
 
 image::cider-log.png[CIDER Log]
 
@@ -14,6 +16,13 @@ visible in the `+*cider-inspect*+` buffer, where the exception of the
 event is also displayed in the Cider Debugger. From the debugger you
 can jump to the source of each frame. At the bottom the Cider log menu
 is shown from which you can perform logging related actions.
+
+== Features
+
+- Search log events and show them in buffers.
+- Pretty print log events.
+- Show log events in the Cider link:inspector.adoc[Inspector]
+- Open exceptions attached to log events in the link:debugger.adoc[Debugger]
 
 == Usage
 
