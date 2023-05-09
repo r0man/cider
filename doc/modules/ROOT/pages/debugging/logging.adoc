@@ -221,26 +221,33 @@ them to clients. If multiple filters are chosen they are combined
 using logical AND condition. The following filters are available:
 
 |===
-| Filter | Description
+| Filter  | Keyboard shortcut | Description
 
 | `end-time`
+| kbd:[-e]
 | Only include log events that were emitted before `end-time`.
 
 | `exceptions`
+| kbd:[-E]
 | Only include log events caused by an exception in the list of `exceptions`.
 
 | `levels`
+| kbd:[-l]
 | Only include log events with a log level in the list of `levels`.
 
 | `loggers`
+| kbd:[-L]
 | Only include log events that were emitted by a logger in the list of `loggers`.
 
 | `pattern`
+| kbd:[-r]
 | Only include log events whose message matcches the regular expression `pattern`.
 
 | `start-time`
+| kbd:[-s]
 | Only include log events that were emitted at, or after `start-time`.
 
 | `threads`
+| kbd:[-t]
 | Only include log events that were emitted by a thread in the list of `threads`.
 |===
