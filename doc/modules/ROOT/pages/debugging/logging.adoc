@@ -23,7 +23,7 @@ is shown from which you can perform logging related actions.
 - Search log events and show them in buffers.
 - Pretty print log events.
 - Show log events in the Cider link:inspector.html[Inspector]
-- Open exceptions attached to log events in the link:debugger.html[Debugger]
+- Show log event exceptions in the Cider link:debugger.html[Debugger]
 
 == Usage
 
