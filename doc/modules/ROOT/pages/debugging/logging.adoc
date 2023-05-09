@@ -81,7 +81,7 @@ Log4j2's reconfiguration mechanism.
 | Select the log framework to use.
 
 | `cider-log-set-buffer`
-| kbd:[C-c l f s]
+| kbd:[C-c l f b]
 | Select the log buffer to user. Default: `+*cider-log*+`
 
 | `cider-log-framework-browse-javadoc`
@@ -99,4 +99,72 @@ In order to capture log events, a log appender needs to be attached to
 a logger of a log framework. Once an appender is attached to a logger
 it captures the log events emitted by the framework in memory.
 
+=== Keybindings
+
+|===
+| Command | Keyboard shortcut | Description
+
+| `cider-log-appender-add`
+| kbd:[C-c l a a]
+| Add a log appender to a logger.
+
+| `cider-log-appender-clear`
+| kbd:[C-c l a c]
+| Clear all captured events of a log appender.
+
+| `cider-log-appender-kill`
+| kbd:[C-c l a k]
+| Kill a log appender by removing it from the logger.
+
+| `cider-log-appender-update`
+| kbd:[C-c l a u]
+| Update the filters, size or threshold of a log appender.
+|===
+
 == Log Consumer
+
+=== Keybindings
+
+|===
+| Command | Keyboard shortcut | Description
+
+| `cider-log-consumer-add`
+| kbd:[C-c l c a]
+| Add a log consumer to a log appender streaming event to the client.
+
+| `cider-log-consumer-kill`
+| kbd:[C-c l c k]
+| Kill a log consumer and stop streaming events to the client.
+
+| `cider-log-consumer-update`
+| kbd:[C-c l c u]
+| Update the filters of a log consumer to change which events are streamed to the client.
+|===
+
+== Log Event
+
+=== Keybindings
+
+|===
+| Command | Keyboard shortcut | Description
+
+| `cider-log-event-clear-buffer`
+| kbd:[C-c l e c]
+| Clear all events from the log event buffer.
+
+| `cider-log-event-show-stacktrace`
+| kbd:[C-c l e e]
+| Show the stacktrace of the log event at point in the Cider debugger.
+
+| `cider-log-event-inspect`
+| kbd:[C-c l e i]
+| Show the log event in the Cider Inspector.
+
+| `cider-log-event-pretty-print`
+| kbd:[C-c l e p]
+| Pretty print the log event in the `+*cider-log-event*+` buffer.
+
+| `cider-log-event-search`
+| kbd:[C-c l e s]
+| Search log events and show them in the `+*cider-log*+` buffer.
+|===

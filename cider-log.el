@@ -528,7 +528,7 @@
 
 ;; Appender actions
 
-(transient-define-suffix cider-log--do-clear-appender (framework appender)
+(transient-define-suffix cider-log-appender-clear (framework appender)
   "Clear the log events of the APPENDER of FRAMEWORK."
   :description "Clear log appender"
   :inapt-if-not #'cider-log-appender-attached-p
@@ -538,7 +538,7 @@
            (cider-log-appender-display-name appender)
            (cider-log-framework-display-name framework)))
 
-(transient-define-suffix cider-log--do-kill-appender (framework appender)
+(transient-define-suffix cider-log-appender-kill (framework appender)
   "Remove the log APPENDER from FRAMEWORK."
   :description "Kill log appender"
   :inapt-if-not #'cider-log-appender-attached-p
@@ -617,7 +617,7 @@
                                     cider-log-appender appender
                                     cider-log-consumer consumer))))))))))))
 
-(transient-define-suffix cider-log--do-kill-consumer (framework appender consumer)
+(transient-define-suffix cider-log-consumer-kill (framework appender consumer)
   "Remove CONSUMER from the APPENDER of the log FRAMEWORK."
   :description "Kill log consumer"
   :inapt-if-not #'cider-log-consumer-attached-p
@@ -654,7 +654,7 @@
 
 ;; Event actions
 
-(transient-define-suffix cider-log--do-clear-buffer (buffer)
+(transient-define-suffix cider-log-event-clear-buffer (buffer)
   "Clear the Cider log events in BUFFER."
   :description "Clear log event buffer"
   :inapt-if-not #'cider-log-buffer-clear-p
@@ -991,7 +991,7 @@
 
 ;; Log Appender Transients
 
-(transient-define-prefix cider-log-add-appender ()
+(transient-define-prefix cider-log-appender-add ()
   "Show the menu to add a Cider log appender."
   ["Cider Log Appender\n"
    (cider-log--framework-option)
@@ -1007,7 +1007,7 @@
   ["Actions"
    ("a" cider-log--do-add-appender)])
 
-(transient-define-prefix cider-log-update-appender ()
+(transient-define-prefix cider-log-appender-update ()
   "Show the menu to update a Cider log appender."
   ["Cider Log Appender\n"
    (cider-log--framework-option)
@@ -1041,13 +1041,13 @@
    (cider-log--thread-option)]
   ["Actions"
    ("a" cider-log--do-add-appender)
-   ("c" cider-log--do-clear-appender)
-   ("k" cider-log--do-kill-appender)
+   ("c" cider-log-appender-clear)
+   ("k" cider-log-appender-kill)
    ("u" cider-log--do-update-appender)])
 
 ;; Log Consumer Transients
 
-(transient-define-prefix cider-log-add-consumer ()
+(transient-define-prefix cider-log-consumer-add ()
   "Show the menu to add a Cider log consumer."
   ["Cider Log Consumer\n"
    (cider-log--framework-option)
@@ -1063,7 +1063,7 @@
   ["Actions"
    ("a" cider-log--do-add-consumer)])
 
-(transient-define-prefix cider-log-update-consumer ()
+(transient-define-prefix cider-log-consumer-update ()
   "Show the menu to update a Cider log consumer."
   ["Cider Log Consumer\n"
    (cider-log--framework-option)
@@ -1094,12 +1094,12 @@
    (cider-log--thread-option)]
   ["Actions"
    ("a" cider-log--do-add-consumer)
-   ("k" cider-log--do-kill-consumer)
+   ("k" cider-log-consumer-kill)
    ("u" cider-log--do-update-consumer)])
 
 ;; Log Event Transients
 
-(transient-define-prefix cider-log-search-events ()
+(transient-define-prefix cider-log-event-search ()
   "Search the search log events menu."
   :value '("--limit=250" "--offset=0")
   ["Cider Log Event\n"
@@ -1139,7 +1139,7 @@
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("c" cider-log--do-clear-buffer)
+   ("c" cider-log-event-clear-buffer)
    ("e" cider-log-event-show-stacktrace)
    ("i" cider-log-event-inspect)
    ("p" cider-log-event-pretty-print)
@@ -1156,24 +1156,24 @@
     ("fj" cider-log-framework-browse-javadoc)
     ("fw" cider-log-framework-browse-website)]
    ["Appender Actions"
-    ("aa" "Add log appender" cider-log-add-appender
+    ("aa" "Add log appender" cider-log-appender-add
      :inapt-if cider-log-appender-attached-p)
-    ("ac" cider-log--do-clear-appender)
-    ("ak" cider-log--do-kill-appender)
-    ("au" "Update log appender" cider-log-update-appender
+    ("ac" cider-log-appender-clear)
+    ("ak" cider-log-appender-kill)
+    ("au" "Update log appender" cider-log-appender-update
      :inapt-if-not cider-log-appender-attached-p)]
    ["Consumer Actions"
-    ("ca" "Add log consumer" cider-log-add-consumer
+    ("ca" "Add log consumer" cider-log-consumer-add
      :inapt-if cider-log-consumer-attached-p)
-    ("ck" cider-log--do-kill-consumer)
+    ("ck" cider-log-consumer-kill)
     ("cu" "Update log consumer" cider-log-update-consumer
      :inapt-if-not cider-log-consumer-attached-p)]
    ["Event Actions"
-    ("ec" cider-log--do-clear-buffer)
+    ("ec" cider-log-event-clear-buffer)
     ("ee" cider-log-event-show-stacktrace)
     ("ei" cider-log-event-inspect)
     ("ep" cider-log-event-pretty-print)
-    ("es" "Search log events" cider-log-search-events
+    ("es" "Search log events" cider-log-event-search
      :inapt-if-not cider-log-appender-attached-p)]]
   (interactive (list (cider-log--framework) (cider-log--appender)))
   (setq cider-log-framework framework)
