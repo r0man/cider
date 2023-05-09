@@ -1,12 +1,42 @@
 = Logging
 :experimental:
 
-Cider Log Mode allows you to capture log events emitted by some of the
-supported Java logging frameworks. The captured log events can be
-searched, viewed in the Cider Inspector and Debugger as well as
-streamed to clients.
+Cider Log Mode allows you to capture, view and inspect log events
+emitted by Java logging frameworks. The captured log events can be
+searched, viewed in the Cider Inspector and Debugger and streamed to
+clients.
 
 == Usage
+
+To use Cider Log Mode, type kbd:[C-c l l] (`cider-log`) in any buffer
+that has a Sesman session attached to it. The first time you run the
+command, it will prompt you to select a log framework to use, and then
+attach a log appender to the root logger of the selected
+framework. After the log appender has been attached, the `cider-log`
+command will show a
+https://www.gnu.org/software/emacs/manual/html_mono/transient.html[Transient]
+menu, from which you can take further actions, like managing the log
+framework, appenders, consumers and events.
+
+To view log events and stream them to your client, type kbd:[es]
+(Search log events) followed by kbd:[s]. This will open the
+`*cider-log*` buffer showing any log events captured thus far. It will
+also add a log consumer to this buffer, which receives newly-arriving
+log events.
+
+Note that the `*cider-log*` buffer might initially be empty, and you
+may see a `No log events found.` message. This is because nothing has
+been logged between adding the appender and searching for events. So,
+now would be a good time to run some code that triggers a log event
+for the selected framework.
+
+== Log Appender
+
+A log appender can be attached to a logger of a log framework. Once
+the appender is attached to a logger it captures the log events for
+the
+
+== Log Consumer
 
 == Keybindings
 
