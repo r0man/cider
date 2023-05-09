@@ -166,29 +166,25 @@ image::cider-log-consumer.png[CIDER Log Consumer]
 The following keybindings can be used to interact with log consumers.
 
 |===
-| Command | Main Menu | Consumer Menu | Keyboard shortcut | Description
+| Command | Main / Consumer Menu | Keyboard shortcut | Description
 
 | `cider-log-consumer`
-|
 |
 | kbd:[C-c l C]
 | Show the transient menu to manage log consumers.
 
 | `cider-log-consumer-add`
-| kbd:[ca]
-| kbd:[a]
+| kbd:[ca] / kbd:[a]
 | kbd:[C-c l c a]
 | Add a log consumer to a log appender streaming event to the client.
 
 | `cider-log-consumer-kill`
-| kbd:[ck]
-| kbd:[k]
+| kbd:[ck] / kbd:[k]
 | kbd:[C-c l c k]
 | Kill a log consumer and stop streaming events to the client.
 
 | `cider-log-consumer-update`
-| kbd:[cu]
-| kbd:[u]
+| kbd:[cu] / kbd:[u]
 | kbd:[C-c l c u]
 | Update the filters of a log consumer to change which events are streamed to the client.
 |===
