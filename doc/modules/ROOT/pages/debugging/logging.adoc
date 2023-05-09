@@ -22,25 +22,17 @@ framework, appenders, consumers and events.
 
 To view log events and stream them to your client, type kbd:[es]
 (Search log events) followed by kbd:[s]. This will open the
-`*cider-log*` buffer showing any log events captured thus far. It will
+`+*cider-log*+` buffer showing any log events captured thus far. It will
 also add a log consumer to this buffer, which receives newly-arriving
 log events.
 
-Note that the `*cider-log*` buffer might initially be empty, and you
+Note that the `+*cider-log*+` buffer might initially be empty, and you
 may see a `No log events found.` message. This is because nothing has
 been logged between adding the appender and searching for events. So,
 now would be a good time to run some code that triggers a log event
 for the selected framework.
 
-== Log Appender
-
-A log appender can be attached to a logger of a log framework. Once
-the appender is attached to a logger it captures the log events for
-the
-
-== Log Consumer
-
-== Keybindings
+=== Keybindings
 
 |===
 | Command | Keyboard shortcut | Description
@@ -61,6 +53,15 @@ the
 | kbd:[C-c l e]
 | Show the menu to manage log events.
 |===
+
+== Log Appender
+
+A log appender can be attached to a logger of a log framework. Once
+the appender is attached to a logger it captures the log events for
+the
+
+== Log Consumer
+
 
 == Supported log frameworks
 
