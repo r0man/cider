@@ -95,8 +95,8 @@ Log4j2's reconfiguration mechanism.
 
 == Log Appender
 
-A log appender can be attached to a logger of a log framework. Once
-the appender is attached to a logger it captures the log events for
-the
+In order to capture log events, a log appender needs to be attached to
+a logger of a log framework. Once an appender is attached to a logger
+it captures the log events emitted by the framework in memory.
 
 == Log Consumer
