@@ -209,8 +209,10 @@ The following keybindings can be used to interact with log events.
 
 == Log Filters
 
-Filters for log events can be attached to log appenders, consumers and
-take effect when searching events. The following filters are available:
+Filters for log events can be attached to log appenders and
+consumers. They also take effect when searching events or streaming
+them to clients. If multiple filters are chosen they are combined
+using logical AND condition. The following filters are available:
 
 |===
 | Filter | Description
