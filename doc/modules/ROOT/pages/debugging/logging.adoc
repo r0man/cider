@@ -96,13 +96,24 @@ Log4j2's reconfiguration mechanism.
 == Log Appender
 
 In order to capture log events, a log appender needs to be attached to
-a logger of a log framework. Once an appender is attached to a logger
-it captures the log events emitted by the framework in memory.
+a logger of a framework. Once an appender is attached to a logger it
+captures the log events emitted by the framework in an in-memory
+atom. A log appender can be configured to have a certain size
+(default: 100000) and a threshold in percentage (default: 10). Log
+events are cleared from the appender when threshold (appender size
+plus threshold) is reached. Additionally an appender can be configured
+to only capture events that match a set of filters.
 
 === Keybindings
 
+The following keybindings can be used to interact with log appenders.
+
 |===
 | Command | Keyboard shortcut | Description
+
+| `cider-log-appender`
+| kbd:[C-c l A]
+| Show the transient menu to manage log appenders.
 
 | `cider-log-appender-add`
 | kbd:[C-c l a a]
@@ -123,10 +134,22 @@ it captures the log events emitted by the framework in memory.
 
 == Log Consumer
 
+Log events can be streamed to a client by attaching a log consumer to
+an appender. Once a log consumer has been attached to an appender, it
+will receive events from the appender. Similar to log appenders,
+consumers can also be configured with a set of filters to only receive
+certain events.
+
 === Keybindings
+
+The following keybindings can be used to interact with log consumers.
 
 |===
 | Command | Keyboard shortcut | Description
+
+| `cider-log-appender`
+| kbd:[C-c l C]
+| Show the transient menu to manage log consumers.
 
 | `cider-log-consumer-add`
 | kbd:[C-c l c a]
@@ -143,10 +166,25 @@ it captures the log events emitted by the framework in memory.
 
 == Log Event
 
+Log events can be searched, streamed to a client or viewed in Cider's
+Inspector and Debugger. When searching log events the user can specify
+a set of filters. Events that match the filters are shown in the
+`+*cider-log*+` buffer. Additinally a log consumer will be attached to
+the appender to receive log events matching the search criteria after
+the search command has been issued. The log appender will be removed
+automatically once a new search has been submitted or when the
+`+*cider-log*+` buffer gets killed.
+
 === Keybindings
+
+The following keybindings can be used to interact with log events.
 
 |===
 | Command | Keyboard shortcut | Description
+
+| `cider-log-event`
+| kbd:[C-c l E]
+| Show the transient menu to manage log events.
 
 | `cider-log-event-clear-buffer`
 | kbd:[C-c l e c]
