@@ -6,6 +6,8 @@ emitted by Java logging frameworks. The captured log events can be
 searched, viewed in the Cider Inspector and Debugger and streamed to
 clients.
 
+image::cider-log.png[CIDER Log]
+
 == Usage
 
 To use Cider Log Mode, type kbd:[C-c l l] (`cider-log`) in any buffer
