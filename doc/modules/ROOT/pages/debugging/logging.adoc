@@ -1,11 +1,11 @@
 = Logging
 :experimental:
 
-Cider Log Mode allows you to capture, debug, inspect and view log
+CIDER Log Mode allows you to capture, debug, inspect and view log
 events emitted by Java logging frameworks. The captured log events can
 be searched, streamed to the client, pretty printed and are integrated
-with the Cider link:inspector.html[Inspector] and
-link:debugger.html[Debugger]. Here is a screenshot of Cider Log Mode
+with the CIDER link:inspector.html[Inspector] and
+link:debugger.html[Debugger]. Here is a screenshot of CIDER Log Mode
 in action.
 
 image::cider-log.png[CIDER Log]
@@ -13,8 +13,8 @@ image::cider-log.png[CIDER Log]
 NOTE: The screenshot displays the list of log events in the
 `+*cider-log*+` buffer on the left. To the right, a log event is
 visible in the `+*cider-inspect*+` buffer, where the exception of the
-event is also displayed in the Cider Debugger. From the debugger you
-can jump to the source of each frame. At the bottom the Cider log menu
+event is also displayed in the CIDER Debugger. From the debugger you
+can jump to the source of each frame. At the bottom the CIDER log menu
 is shown from which you can perform logging related actions.
 
 == Features
@@ -22,13 +22,13 @@ is shown from which you can perform logging related actions.
 - Browse Javadocs and website of log framework.
 - Search log events and show them in buffers.
 - link:../usage/pretty_printing.html[Pretty Print] log events.
-- Show log events in the Cider link:inspector.html[Inspector]
-- Show log event exceptions in the Cider link:debugger.html[Debugger]
+- Show log events in the CIDER link:inspector.html[Inspector]
+- Show log event exceptions in the CIDER link:debugger.html[Debugger]
 
 == Usage
 
-To use Cider Log Mode, type kbd:[C-c l l] or kbd:[M-x cider-log] in
-any buffer that has a Cider https://github.com/vspinu/sesman[Sesman]
+To use CIDER Log Mode, type kbd:[C-c l l] or kbd:[M-x cider-log] in
+any buffer that has a CIDER https://github.com/vspinu/sesman[Sesman]
 session attached to it. The first time you run the command, it will
 prompt you to select a log framework to use, and then attach a log
 appender to the root logger of the selected framework. After the log
@@ -56,7 +56,7 @@ the selected framework.
 
 | `cider-log`
 | kbd:[C-c l l]
-| Show the Cider log menu.
+| Show the CIDER log menu.
 
 | `cider-log-appender`
 | kbd:[C-c l a]
@@ -73,7 +73,7 @@ the selected framework.
 
 == Log framework
 
-Cider Log Mode supports log frameworks that allow reconfiguration at
+CIDER Log Mode supports log frameworks that allow reconfiguration at
 run time. More specifically the framework should support attaching log
 appenders to loggers, in order to capture events.
 
@@ -191,7 +191,7 @@ The following keybindings can be used to interact with log consumers.
 
 == Log Event
 
-Log events can be searched, streamed to a client or viewed in Cider's
+Log events can be searched, streamed to a client or viewed in CIDER's
 Inspector and Debugger. When searching log events the user can specify
 a set of filters. Events that match the filters are shown in the
 `+*cider-log*+` buffer. Additinally a log consumer will be attached to
@@ -219,11 +219,11 @@ The following keybindings can be used to interact with log events.
 
 | `cider-log-event-show-stacktrace`
 | kbd:[C-c l e e]
-| Show the stacktrace of the log event at point in the Cider debugger.
+| Show the stacktrace of the log event at point in the CIDER debugger.
 
 | `cider-log-event-inspect`
 | kbd:[C-c l e i]
-| Show the log event in the Cider Inspector.
+| Show the log event in the CIDER Inspector.
 
 | `cider-log-event-pretty-print`
 | kbd:[C-c l e p]
