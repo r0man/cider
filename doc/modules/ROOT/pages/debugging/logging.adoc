@@ -154,7 +154,7 @@ The following keybindings can be used to interact with log consumers.
 |===
 | Command | Keyboard shortcut | Description
 
-| `cider-log-appender`
+| `cider-log-consumer`
 | kbd:[C-c l C]
 | Show the transient menu to manage log consumers.
 
