@@ -701,8 +701,13 @@
       (seq-doseq (window windows)
         (set-window-point window (point-max))))))
 
-(defun cider-log-event-show-stacktrace (framework appender event)
+(transient-define-suffix cider-log-event-show-stacktrace (framework appender event)
   "Show the stacktrace of the log EVENT of FRAMEWORK and APPENDER."
+  :description "Show log event stacktrace"
+  :if #'cider-log-event-at-point
+  :inapt-if-not (lambda ()
+                  (when-let (event (cider-log-event-at-point))
+                    (nrepl-dict-get event "exception")))
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
   (when (and event (nrepl-dict-get event "exception"))
     (let ((auto-select-buffer cider-auto-select-error-buffer)
@@ -720,8 +725,10 @@
                                                 'ancillary)
                             (reverse causes)))))))))))
 
-(defun cider-log-event-pretty-print (framework appender event)
+(transient-define-suffix cider-log-event-pretty-print (framework appender event)
   "Format the log EVENT of FRAMEWORK and APPENDER."
+  :description "Pretty print log event"
+  :if #'cider-log-event-at-point
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
   (if event
       (when-let (event (cider-sync-request:log-format-event framework appender event))
@@ -733,8 +740,10 @@
             (goto-char (point-min)))))
     (user-error "No log event found at point")))
 
-(defun cider-log-event-inspect (framework appender event)
+(transient-define-suffix cider-log-event-inspect (framework appender event)
   "Inspect the log EVENT of FRAMEWORK and APPENDER."
+  :description "Inspect log event"
+  :if #'cider-log-event-at-point
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
   (when event
     (cider-inspector--render-value
@@ -1131,6 +1140,9 @@
    (cider-log--thread-option)]
   ["Actions"
    ("c" cider-log--do-clear-buffer)
+   ("e" cider-log-event-show-stacktrace)
+   ("i" cider-log-event-inspect)
+   ("p" cider-log-event-pretty-print)
    ("s" cider-log--do-search-events)])
 
 ;; Main Transient
@@ -1158,6 +1170,9 @@
      :inapt-if-not cider-log-consumer-attached-p)]
    ["Event Actions"
     ("ec" cider-log--do-clear-buffer)
+    ("ee" cider-log-event-show-stacktrace)
+    ("ei" cider-log-event-inspect)
+    ("ep" cider-log-event-pretty-print)
     ("es" "Search log events" cider-log-search-events
      :inapt-if-not cider-log-appender-attached-p)]]
   (interactive (list (cider-log--framework) (cider-log--appender)))
