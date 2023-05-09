@@ -120,7 +120,7 @@ events are cleared from the appender when threshold (appender size
 plus threshold) is reached. Additionally an appender can be configured
 to only capture events that match a set of filters.
 
-image::cider-appender.png[CIDER Log Consumer]
+image::cider-log-appender.png[CIDER Log Consumer]
 
 === Keybindings
 
@@ -158,7 +158,7 @@ will receive events from the appender. Similar to log appenders,
 consumers can also be configured with a set of filters to only receive
 certain events.
 
-image::cider-consumer.png[CIDER Log Consumer]
+image::cider-log-consumer.png[CIDER Log Consumer]
 
 === Keybindings
 
@@ -195,7 +195,7 @@ the search command has been issued. The log appender will be removed
 automatically once a new search has been submitted or when the
 `+*cider-log*+` buffer gets killed.
 
-image::cider-event.png[CIDER Log Event]
+image::cider-log-event.png[CIDER Log Event]
 
 === Keybindings
 
