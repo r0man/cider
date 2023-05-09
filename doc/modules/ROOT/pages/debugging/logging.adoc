@@ -56,6 +56,21 @@ the selected framework.
 
 == Log framework
 
+Cider Log Mode supports log frameworks that allow reconfiguration at
+run time. More specifically the framework should support attaching log
+appenders to loggers, in order to capture events.
+
+At the moment the following log frameworks are supported:
+
+- https://docs.oracle.com/en/java/javase/19/core/java-logging-overview.html[Java Util Logging]
+- https://logback.qos.ch[Logback]
+
+There is some work in progress to support
+https://logging.apache.org/log4j/2.x/[Log4j] as well, but there are
+some https://stackoverflow.com/a/17842174/12711900[difficulties] with
+configuration changes made at runtime, which are wiped out by the
+Log4j2's reconfiguration mechanism.
+
 === Keybindings
 
 |===
@@ -85,21 +100,3 @@ the appender is attached to a logger it captures the log events for
 the
 
 == Log Consumer
-
-
-== Supported log frameworks
-
-Cider Log Mode supports log frameworks that allow reconfiguration at
-run time. More specifically the framework should support attaching log
-appenders to loggers, in order to capture events.
-
-At the moment the following log frameworks are supported:
-
-- https://docs.oracle.com/en/java/javase/19/core/java-logging-overview.html[Java Util Logging]
-- https://logback.qos.ch[Logback]
-
-There is some work in progress to support
-https://logging.apache.org/log4j/2.x/[Log4j] as well, but there are
-some https://stackoverflow.com/a/17842174/12711900[difficulties] with
-configuration changes made at runtime, which are wiped out by the
-Log4j2's reconfiguration mechanism.
