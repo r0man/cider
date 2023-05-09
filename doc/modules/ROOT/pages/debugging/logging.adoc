@@ -54,6 +54,30 @@ the selected framework.
 | Show the menu to manage log events.
 |===
 
+== Log framework
+
+=== Keybindings
+
+|===
+| Command | Keyboard shortcut | Description
+
+| `cider-log-set-framework`
+| kbd:[C-c l f s]
+| Select the log framework to use.
+
+| `cider-log-set-buffer`
+| kbd:[C-c l f s]
+| Select the log buffer to user. Default: `+*cider-log*+`
+
+| `cider-log-framework-browse-javadoc`
+| kbd:[C-c l f j]
+| Browse the Javadocs of the log framework.
+
+| `cider-log-framework-browse-website`
+| kbd:[C-c l f w]
+| Browse the website of the log framework.
+|===
+
 == Log Appender
 
 A log appender can be attached to a logger of a log framework. Once
