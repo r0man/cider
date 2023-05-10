@@ -1160,17 +1160,20 @@
      :inapt-if cider-log-appender-attached-p)
     ("ac" cider-log-appender-clear)
     ("ak" cider-log-appender-kill)
+    ("am" "Manage appender" cider-log-appender)
     ("au" "Update log appender" cider-log-appender-update
      :inapt-if-not cider-log-appender-attached-p)]
    ["Consumer Actions"
     ("ca" "Add log consumer" cider-log-consumer-add
      :inapt-if cider-log-consumer-attached-p)
     ("ck" cider-log-consumer-kill)
+    ("cm" "Manage consumer" cider-log-consumer)
     ("cu" "Update log consumer" cider-log-consumer-update
      :inapt-if-not cider-log-consumer-attached-p)]
    ["Event Actions"
     ("ec" cider-log-event-clear-buffer)
     ("ee" cider-log-event-show-stacktrace)
+    ("em" "Manage events" cider-log-event)
     ("ei" cider-log-event-inspect)
     ("ep" cider-log-event-pretty-print)
     ("es" "Search log events" cider-log-event-search
