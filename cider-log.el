@@ -670,8 +670,7 @@
   :inapt-if-not #'cider-log-appender-attached-p
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log--filters)))
   (with-current-buffer (get-buffer-create cider-log-buffer)
-    (let ((inhibit-read-only t)
-          (suffixes (transient-suffixes transient-current-command)))
+    (let ((inhibit-read-only t))
       (cider-log--remove-current-buffer-consumer)
       (erase-buffer)
       (let ((events (cider-sync-request:log-search
