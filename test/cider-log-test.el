@@ -29,10 +29,24 @@
 (require 'cider-log)
 
 (describe "cider-log"
-  (it "raises user-error when cider is not connected."
-    (spy-on 'cider-connected-p :and-return-value nil)
-    (expect (cider-log "test") :to-throw 'user-error))
+  (let ((framework (nrepl-dict "id" "jul" "name" "Java Util Logging"))
+        (appender (nrepl-dict "id" "cider-log")))
 
-  (it "raises user-error when the `apropos' op is not supported."
-    (spy-on 'cider-ensure-op-supported :and-return-value nil)
-    (expect (cider-log "test") :to-throw 'user-error)))
+    (it "raises user-error when cider is not connected."
+      (spy-on 'cider-connected-p :and-return-value nil)
+      (expect (cider-log framework appender) :to-throw 'user-error))
+
+    (it "doesn't add an appender when initialized."
+      (let ((cider-log--initialized-p t))
+        (spy-on 'cider-sync-request:log-frameworks :and-return-value (list framework))
+        (spy-on 'transient-setup)
+        (cider-log framework appender)
+        (expect 'transient-setup :to-have-been-called-with 'cider-log)))
+
+    (it "does add an appender when not initialized."
+      (let ((cider-log--initialized-p nil))
+        (spy-on 'cider-sync-request:log-frameworks :and-return-value (list framework))
+        (spy-on 'cider-sync-request:log-add-appender :and-return-value appender)
+        (spy-on 'transient-setup)
+        (cider-log framework appender)
+        (expect 'transient-setup :to-have-been-called-with 'cider-log)))))
