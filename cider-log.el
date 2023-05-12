@@ -309,12 +309,10 @@
                   nil nil initial-input history)
                  (cider-log-framework-by-id frameworks))))
 
-(defun cider-log--read-levels (&optional prompt initial-input history)
-  "Read a list of levels from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (let ((table (when (cider-log-appender-attached-p)
-                 (nrepl-dict-keys (cider-sync-request:log-levels
-                                   cider-log-framework cider-log-appender)))))
-    (completing-read-multiple (or prompt "Levels: ") table nil nil initial-input history)))
+(defun cider-log--read-level (&optional prompt initial-input history)
+  "Read a log level from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
+  (let ((table (when cider-log-framework (cider-log-framework-level-names cider-log-framework))))
+    (completing-read (or prompt "Level: ") table nil nil initial-input history)))
 
 (defun cider-log--read-loggers (&optional prompt initial-input history)
   "Read a list of loggers from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
@@ -351,6 +349,11 @@
 (defun cider-log-framework-name (framework)
   "Return the name of the log FRAMEWORK."
   (nrepl-dict-get framework "name"))
+
+(defun cider-log-framework-level-names (framework)
+  "Return the log level names of the log FRAMEWORK."
+  (seq-map (lambda (level) (nrepl-dict-get level "name"))
+           (nrepl-dict-get framework "levels")))
 
 (defun cider-log-framework-website-url (framework)
   "Return the website URL of the log FRAMEWORK."
@@ -832,9 +835,9 @@
   "Return the value of the exceptions option from SUFFIXES."
   (cider-log--transient-value "--exceptions=" suffixes))
 
-(defun cider-log--levels-filter (suffixes)
+(defun cider-log--level-filter (suffixes)
   "Return the value of the levels option from SUFFIXES."
-  (cider-log--transient-value "--levels=" suffixes))
+  (cider-log--transient-value "--level=" suffixes))
 
 (defun cider-log--loggers-filter (suffixes)
   "Return the value of the loggers option from SUFFIXES."
@@ -859,7 +862,7 @@
     (nrepl-dict
      "end-time" (cider-log--end-time-filter suffixes)
      "exceptions" (cider-log--exceptions-filter suffixes)
-     "levels" (cider-log--levels-filter suffixes)
+     "level" (cider-log--level-filter suffixes)
      "loggers" (cider-log--loggers-filter suffixes)
      "pattern" (cider-log--pattern-filter suffixes)
      "start-time" (cider-log--start-time-filter suffixes)
@@ -926,13 +929,12 @@
   :variable 'cider-log-framework)
 
 (transient-define-infix cider-log--level-option ()
-  :argument "--levels="
+  :argument "--level="
   :class 'transient-option
   :description "Filter by levels"
   :key "-l"
-  :multi-value t
-  :prompt "Log Levels: "
-  :reader #'cider-log--read-levels)
+  :prompt "Log Level: "
+  :reader #'cider-log--read-level)
 
 (transient-define-infix cider-log--limit-option ()
   :class 'cider-log-variable
