@@ -990,6 +990,15 @@
   :prompt "Threads: "
   :reader #'cider-log--read-threads)
 
+;;;###autoload (autoload 'cider-log-framework "cider-log" "Show the Cider log framework menu." t)
+(transient-define-prefix cider-log-framework ()
+  "Show the Cider log framework menu."
+  [["Cider Log Framework\n\nActions"
+    ("s" cider-log-set-framework)
+    ("b" cider-log-set-buffer)
+    ("j" cider-log-framework-browse-javadoc)
+    ("w" cider-log-framework-browse-website)]])
+
 ;; Log Appender Transients
 
 (transient-define-prefix cider-log-appender-add ()
@@ -1149,7 +1158,7 @@
 ;; Main Transient
 
 ;;;###autoload (autoload 'cider-log "cider-log" "Show the Cider log menu." t)
-(transient-define-prefix cider-log (framework appender)
+(transient-define-prefix cider-log2 (framework appender)
   "Show the Cider log menu."
   [["Framework Actions"
     ("fs" cider-log-set-framework)
@@ -1179,6 +1188,22 @@
     ("ep" cider-log-event-pretty-print)
     ("es" "Search log events" cider-log-event-search
      :inapt-if-not cider-log-appender-attached-p)]]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (setq cider-log-framework framework)
+  (setq cider-log-appender appender)
+  (unless cider-log--initialized-p
+    (unless (cider-log-appender-reload framework appender)
+      (cider-log--do-add-appender framework appender)
+      (setq cider-log--initialized-p t)))
+  (transient-setup 'cider-log2))
+
+(transient-define-prefix cider-log (framework appender)
+  "Show the Cider log menu."
+  [["Cider Log"
+    ("f" "Framework" cider-log-framework)
+    ("a" "Appender" cider-log-appender)
+    ("c" "Consumer" cider-log-consumer)
+    ("e" "Event" cider-log-event)]]
   (interactive (list (cider-log--framework) (cider-log--appender)))
   (setq cider-log-framework framework)
   (setq cider-log-appender appender)
