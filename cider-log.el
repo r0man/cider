@@ -126,7 +126,7 @@
   (thread-first `("op" "log-analyze-stacktrace"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-id appender)
-                  "event-id" ,(nrepl-dict-get event "id"))
+                  "event" ,(cider-log-event-id event))
                 (cider-nrepl-send-request callback)))
 
 (defun cider-sync-request:log-update-consumer (framework appender consumer)
@@ -173,13 +173,13 @@
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-clear-appender")))
 
-(defun cider-sync-request:log-inspect-event (framework appender event-id)
+(defun cider-sync-request:log-inspect-event (framework appender event)
   "Inspect the log event with the ID in the APPENDER of the log FRAMEWORK."
   (cider-ensure-op-supported "log-inspect-event")
   (thread-first `("op" "log-inspect-event"
                   "framework" ,(cider-log-framework-id framework)
                   "appender" ,(cider-log-appender-id appender)
-                  "event-id" ,event-id)
+                  "event" ,(cider-log-event-id event))
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "value")))
 
@@ -193,7 +193,7 @@
                            `(("op" "log-format-event")
                              ("framework" ,(cider-log-framework-id framework))
                              ("appender" ,(cider-log-appender-id appender))
-                             ("event-id" ,(nrepl-dict-get event "id")))))
+                             ("event" ,(cider-log-event-id event)))))
     (cider-nrepl-send-sync-request)
     (nrepl-dict-get "log-format-event")))
 
@@ -204,8 +204,8 @@
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "log-frameworks")))
 
-(cl-defun cider-sync-request:log-search (framework appender &key limit filters offset)
-  "Search log events of FRAMEWORK and APPENDER using LIMIT and FILTERS."
+(cl-defun cider-sync-request:log-search (framework appender &key filters limit offset)
+  "Search log events of FRAMEWORK and APPENDER using FILTERS, LIMIT and OFFSET."
   (cider-ensure-op-supported "log-search")
   (thread-first `("op" "log-search"
                   "framework" ,(cider-log-framework-id framework)
@@ -466,6 +466,10 @@
     (cider-log-appender-consumer appender consumer)))
 
 ;; Event
+
+(defun cider-log-event-id (event)
+  "Return the id of the log EVENT."
+  (nrepl-dict-get event "id"))
 
 (defun cider-log-event--format-logback (event)
   "Format the log EVENT in logview's Logback format."
@@ -754,8 +758,7 @@
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
   (when event
     (cider-inspector--render-value
-     (cider-sync-request:log-inspect-event
-      framework appender (nrepl-dict-get event "id")))))
+     (cider-sync-request:log-inspect-event framework appender event))))
 
 (defun cider-log-event-next-line (&optional n)
   "Move N lines forward."
