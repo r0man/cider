@@ -990,11 +990,20 @@
   :prompt "Threads: "
   :reader #'cider-log--read-threads)
 
+(defun cider-log--ensure-initialized (framework appender)
+  "Ensure that FRAMEWORK and APPENDER are initialized."
+  (setq cider-log-framework framework)
+  (setq cider-log-appender appender)
+  (unless cider-log--initialized-p
+    (unless (cider-log-appender-reload framework appender)
+      (cider-log--do-add-appender framework appender)
+      (setq cider-log--initialized-p t))))
+
 ;; Log Appender Transients
 
-(transient-define-prefix cider-log-appender-add ()
+(transient-define-prefix cider-log-appender-add (framework appender)
   "Show the menu to add a Cider log appender."
-  ["Cider Log Appender\n"
+  ["Cider Add Log Appender\n"
    (cider-log--framework-option)
    (cider-log--appender-option)]
   ["Filters:"
@@ -1006,11 +1015,14 @@
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("a" cider-log--do-add-appender)])
+   ("a" cider-log--do-add-appender)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-appender-add))
 
-(transient-define-prefix cider-log-appender-update ()
+(transient-define-prefix cider-log-appender-update (framework appender)
   "Show the menu to update a Cider log appender."
-  ["Cider Log Appender\n"
+  ["Cider Update Log Appender\n"
    (cider-log--framework-option)
    (cider-log--appender-option)]
   ["Filters:"
@@ -1022,9 +1034,12 @@
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("u" cider-log--do-update-appender)])
+   ("u" cider-log--do-update-appender)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-appender-update))
 
-(transient-define-prefix cider-log-appender ()
+(transient-define-prefix cider-log-appender (framework appender)
   "Show the Cider log appender menu."
   ["Cider Log Appender\n"
    (cider-log--framework-option)
@@ -1044,13 +1059,16 @@
    ("a" cider-log--do-add-appender)
    ("c" cider-log-appender-clear)
    ("k" cider-log-appender-kill)
-   ("u" cider-log--do-update-appender)])
+   ("u" cider-log--do-update-appender)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-appender))
 
 ;; Log Consumer Transients
 
-(transient-define-prefix cider-log-consumer-add ()
+(transient-define-prefix cider-log-consumer-add (framework appender)
   "Show the menu to add a Cider log consumer."
-  ["Cider Log Consumer\n"
+  ["Cider Add Log Consumer\n"
    (cider-log--framework-option)
    (cider-log--appender-option)]
   ["Filters:"
@@ -1062,11 +1080,14 @@
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("a" cider-log--do-add-consumer)])
+   ("a" cider-log--do-add-consumer)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-consumer-add))
 
-(transient-define-prefix cider-log-consumer-update ()
+(transient-define-prefix cider-log-consumer-update (framework appender)
   "Show the menu to update a Cider log consumer."
-  ["Cider Log Consumer\n"
+  ["Cider Update Log Consumer\n"
    (cider-log--framework-option)
    (cider-log--appender-option)]
   ["Filters:"
@@ -1078,9 +1099,12 @@
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("u" cider-log--do-update-consumer)])
+   ("u" cider-log--do-update-consumer)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-consumer-update))
 
-(transient-define-prefix cider-log-consumer ()
+(transient-define-prefix cider-log-consumer (framework appender)
   "Show the Cider log consumer menu."
   ["Cider Log Consumer\n"
    (cider-log--framework-option)
@@ -1096,14 +1120,17 @@
   ["Actions"
    ("a" cider-log--do-add-consumer)
    ("k" cider-log-consumer-kill)
-   ("u" cider-log--do-update-consumer)])
+   ("u" cider-log--do-update-consumer)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-consumer))
 
 ;; Log Event Transients
 
-(transient-define-prefix cider-log-event-search ()
+(transient-define-prefix cider-log-event-search (framework appender)
   "Search the search log events menu."
   :value '("--limit=250" "--offset=0")
-  ["Cider Log Event\n"
+  ["Cider Search Log Event\n"
    (cider-log--framework-option)
    (cider-log--appender-option)
    (cider-log--buffer-option)]
@@ -1119,9 +1146,12 @@
    (cider-log--start-time-option)
    (cider-log--thread-option)]
   ["Actions"
-   ("s" cider-log--do-search-events)])
+   ("s" cider-log--do-search-events)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-event-search))
 
-(transient-define-prefix cider-log-event ()
+(transient-define-prefix cider-log-event (framework appender)
   "Show the Cider log event menu."
   :value '("--limit=250" "--offset=0")
   ["Cider Log Event\n"
@@ -1144,7 +1174,10 @@
    ("e" cider-log-event-show-stacktrace)
    ("i" cider-log-event-inspect)
    ("p" cider-log-event-pretty-print)
-   ("s" cider-log--do-search-events)])
+   ("s" cider-log--do-search-events)]
+  (interactive (list (cider-log--framework) (cider-log--appender)))
+  (cider-log--ensure-initialized framework appender)
+  (transient-setup 'cider-log-event))
 
 ;; Main Transient
 
@@ -1180,12 +1213,7 @@
     ("es" "Search log events" cider-log-event-search
      :inapt-if-not cider-log-appender-attached-p)]]
   (interactive (list (cider-log--framework) (cider-log--appender)))
-  (setq cider-log-framework framework)
-  (setq cider-log-appender appender)
-  (unless cider-log--initialized-p
-    (unless (cider-log-appender-reload framework appender)
-      (cider-log--do-add-appender framework appender)
-      (setq cider-log--initialized-p t)))
+  (cider-log--ensure-initialized framework appender)
   (transient-setup 'cider-log))
 
 ;; Major mode
