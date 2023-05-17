@@ -282,9 +282,14 @@
 
 (defun cider-log--read-appender (prompt initial-input history)
   "Read a appender from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (nrepl-dict "id" (read-string (or prompt "Log appender: ")
-                                (or initial-input cider-log-appender-id)
-                                history cider-log-appender-id)))
+  (let ((table (when cider-log-framework
+                 (when-let (framework (cider-log-framework-reload cider-log-framework))
+                   (seq-map #'cider-log-appender-id (cider-log-framework-appenders framework))))))
+    (nrepl-dict "id" (completing-read
+                      (or prompt "Log appender: ")
+                      table nil nil
+                      (or initial-input cider-log-appender-id)
+                      history cider-log-appender-id))))
 
 (defun cider-log--read-buffer (&optional prompt initial-input history)
   "Read the log buffer from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
