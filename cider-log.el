@@ -471,6 +471,10 @@
   "Return the id of the log EVENT."
   (nrepl-dict-get event "id"))
 
+(defun cider-log-event-exception (event)
+  "Return the exception of the log EVENT."
+  (nrepl-dict-get event "exception"))
+
 (defun cider-log-event--format-logback (event)
   "Format the log EVENT in logview's Logback format."
   (nrepl-dbind-response event (_exception level logger message thread timestamp)
@@ -718,9 +722,9 @@
   :if #'cider-log-event-at-point
   :inapt-if-not (lambda ()
                   (when-let (event (cider-log-event-at-point))
-                    (nrepl-dict-get event "exception")))
+                    (cider-log-event-exception event)))
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
-  (when (and event (nrepl-dict-get event "exception"))
+  (when (and event (cider-log-event-exception event))
     (let ((auto-select-buffer cider-auto-select-error-buffer)
           (causes nil))
       (cider-request:log-analyze-stacktrace
