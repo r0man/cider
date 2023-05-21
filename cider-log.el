@@ -576,7 +576,7 @@
            (cider-log-appender-display-name appender)))
 
 (transient-define-suffix cider-log--do-add-appender (framework appender)
-  "Add the log APPENDER to FRAMEWORK."
+  "Add the APPENDER to the log FRAMEWORK."
   :description "Add log appender"
   :inapt-if #'cider-log-appender-attached-p
   (interactive (list (cider-log--framework) (oref transient-current-prefix scope)))
@@ -586,7 +586,7 @@
            (cider-log-framework-display-name framework)))
 
 (transient-define-suffix cider-log--do-update-appender (framework appender)
-  "Update the log APPENDER of FRAMEWORK."
+  "Update the APPENDER of the log FRAMEWORK."
   :description "Update log appender"
   :inapt-if-not #'cider-log-appender-attached-p
   (interactive (list (cider-log--framework) (oref transient-current-prefix scope)))
@@ -598,7 +598,7 @@
 ;; Consumer actions
 
 (transient-define-suffix cider-log--do-add-consumer (framework appender consumer buffer)
-  "Add CONSUMER to the APPENDER of the log FRAMEWORK and stream events to BUFFER."
+  "Add the CONSUMER to the APPENDER of the log FRAMEWORK and write events to BUFFER."
   :description "Add log consumer"
   :inapt-if #'cider-log-consumer-attached-p
   (interactive (list (cider-log--framework)
