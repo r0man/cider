@@ -121,6 +121,28 @@ any of the values is nil."
       (setq out (nrepl-dict-get out (pop keys))))
     out))
 
+(defun nrepl-dict-put-in (dict keys val)
+  "Associate in a nested DICT, VALUE under KEYS.
+KEYS is a list of keys.  Return the modified dict. If any of the keys is
+not present or if any of the values is nil, a new dictionary will be added
+in the intermediate levels."
+  (cond ((null dict)
+         (nrepl-dict-put-in (nrepl-dict) keys val))
+        ((and (car keys) (null (cdr keys)))
+         (nrepl-dict-put dict (car keys) val))
+        ((and (car keys) (cdr keys))
+         (let ((obj (nrepl-dict-get dict (car keys))))
+           (cond ((nrepl-dict-p obj)
+                  (nrepl-dict-put-in obj (cdr keys) val)
+                  dict)
+                 ((null obj)
+                  (let ((new-dict (nrepl-dict)))
+                    (nrepl-dict-put dict (car keys) new-dict)
+                    (nrepl-dict-put-in new-dict (cdr keys) val)
+                    dict))
+                 (t (error "Not an nREPL dict object: %s" obj)))))
+        (t dict)))
+
 (defun nrepl-dict-flat-map (function dict)
   "Map FUNCTION over DICT and flatten the result.
 FUNCTION follows the same restrictions as in `nrepl-dict-map', and it must

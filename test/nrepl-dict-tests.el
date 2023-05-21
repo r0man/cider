@@ -161,3 +161,45 @@
           (dict3 '(dict "id" 1 "session" 1 "blah" (1 2))))
       (nrepl--merge dict1 dict2)
       (expect dict1 :not :to-equal dict3))))
+
+(describe "nrepl-dict-put-in"
+  :var (input)
+
+  (describe "when dict is nil"
+    (before-each
+      (setq input nil))
+
+    (it "adds nothing when keys are empty"
+      (expect (nrepl-dict-put-in input '() "x") :to-equal (nrepl-dict)))
+
+    (it "adds a value under a single key"
+      (expect (nrepl-dict-put-in input '("a") "x") :to-equal '(dict "a" "x")))
+
+    (it "adds a value under multiple keys"
+      (expect (nrepl-dict-put-in input '("a" "b") "x") :to-equal '(dict "a" (dict "b" "x")))))
+
+  (describe "when dict is empty"
+    (before-each
+      (setq input (nrepl-dict)))
+
+    (it "adds nothing when keys are empty"
+      (expect (nrepl-dict-put-in input '() "x") :to-equal (nrepl-dict)))
+
+    (it "adds a value under a single key"
+      (expect (nrepl-dict-put-in input '("a") "x") :to-equal '(dict "a" "x")))
+
+    (it "adds a value under multiple keys"
+      (expect (nrepl-dict-put-in input '("a" "b") "x") :to-equal '(dict "a" (dict "b" "x")))))
+
+  (describe "when dict is not empty"
+    (before-each
+      (setq input (nrepl-dict "a" (nrepl-dict "b" "y"))))
+
+    (it "adds nothing when keys are empty"
+      (expect (nrepl-dict-put-in input '() "x") :to-equal input))
+
+    (it "adds a value under a single key"
+      (expect (nrepl-dict-put-in input '("a") "x") :to-equal '(dict "a" "x")))
+
+    (it "adds a value under multiple keys"
+      (expect (nrepl-dict-put-in input '("a" "b") "x") :to-equal '(dict "a" (dict "b" "x"))))))
