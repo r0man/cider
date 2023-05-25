@@ -1352,6 +1352,11 @@
 (define-derived-mode cider-log-mode logview-mode "Cider Log"
   "Major mode for inspecting Clojure log events.
 
+CIDER Log Mode allows you to capture, debug, inspect and view log events
+emitted by Java logging frameworks.  The captured log events can be
+searched, streamed to the client, pretty printed and are integrated with
+the CIDER Inspector and the CIDER stacktrace mode.
+
 \\{cider-log-mode-map}"
   (use-local-map cider-log-mode-map)
   (setq-local electric-indent-chars nil)
