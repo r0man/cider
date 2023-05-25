@@ -82,7 +82,8 @@
   :safe #'booleanp
   :type 'boolean)
 
-(defvar cider-log--initialized-p nil)
+(defvar cider-log--initialized-once-p nil
+  "Set to t if log framework and appender have been initialized once.")
 
 (defvar cider-log-framework nil
   "The current log framework to use.")
@@ -117,6 +118,22 @@
   "Return non-nil if BUFFER is not empty, otherwise nil."
   (when-let (buffer (get-buffer (or buffer cider-log-buffer)))
     (> (buffer-size buffer) 0)))
+
+(get-buffer nil)
+
+(defun cider-log--description-set-framework ()
+  "Return the description for the set framework action."
+  (format "Select framework %s"
+          (if cider-log-framework-name
+              (cider-log--format-value cider-log-framework-name)
+            (propertize "n/a" 'face 'font-lock-comment-face))))
+
+(defun cider-log--description-set-buffer ()
+  "Return the description for the set buffer action."
+  (format "Select buffer %s"
+          (if cider-log-buffer
+              (cider-log--format-value cider-log-buffer)
+            (propertize "n/a" 'face 'font-lock-comment-face))))
 
 (defun cider-log--format-time (time)
   "Format TIME in ISO8601 format."
@@ -556,17 +573,13 @@
 
 (transient-define-suffix cider-log-set-framework (framework-name)
   "Set the current log framework to FRAMEWORK-NAME."
-  :description (lambda ()
-                 (format "Select framework %s"
-                         (cider-log--format-value cider-log-framework-name)))
+  :description #'cider-log--description-set-framework
   (interactive (list (cider-log--read-framework-name)))
   (setq cider-log-framework-name framework-name))
 
 (transient-define-suffix cider-log-set-buffer (buffer)
   "Set the current log buffer to BUFFER."
-  :description (lambda ()
-                 (format "Select buffer %s"
-                         (cider-log--format-value cider-log-buffer)))
+  :description #'cider-log--description-set-buffer
   (interactive (list (cider-log--read-buffer)))
   (setq cider-log-buffer buffer))
 
@@ -1046,10 +1059,10 @@
   (when consumer
     (setq cider-log-consumer consumer)
     (cider-log--set-filters (cider-log-consumer-filters appender)))
-  (when (and appender (not cider-log--initialized-p))
+  (when (and appender (not cider-log--initialized-once-p))
     (unless (cider-log-appender-reload framework appender)
       (cider-log--do-add-appender framework appender)
-      (setq cider-log--initialized-p t))))
+      (setq cider-log--initialized-once-p t))))
 
 ;; Log Framework Transient
 
