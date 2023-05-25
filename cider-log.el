@@ -382,6 +382,11 @@
 
 ;; Log Framework
 
+(defun cider-log-framework-appender (framework id)
+  "Return the appender of the log FRAMEWORK with the given ID."
+  (seq-find (lambda (appender) (equal id (cider-log-appender-id appender)))
+            (cider-log-framework-appenders framework)))
+
 (defun cider-log-framework-appenders (framework)
   "Return the appenders of the log FRAMEWORK."
   (nrepl-dict-get framework "appenders"))
@@ -415,11 +420,6 @@
   "Add the APPENDER to the log FRAMEWORK."
   (cider-sync-request:log-add-appender framework appender))
 
-(defun cider-log-framework-appender-by-id (framework id)
-  "Lookup the appender of the log FRAMEWORK by ID."
-  (seq-find (lambda (appender) (equal id (cider-log-appender-id appender)))
-            (cider-log-framework-appenders framework)))
-
 (defun cider-log-framework-by-id (frameworks id)
   "Find the log framework in FRAMEWORKS by ID."
   (seq-find (lambda (framework) (equal id (cider-log-framework-id framework))) frameworks))
@@ -445,7 +445,7 @@
              (appender-id (if appender
                               (cider-log-appender-id appender)
                             cider-log-appender-id)))
-    (cider-log-framework-appender-by-id framework appender-id)))
+    (cider-log-framework-appender framework appender-id)))
 
 (defun cider-log-appender-consumers (appender)
   "Return the consumers of the log APPENDER."
@@ -480,7 +480,7 @@
 (defun cider-log-appender-reload (framework appender)
   "Reload the APPENDER of the log FRAMEWORK."
   (when-let (framework (cider-log-framework-reload framework))
-    (cider-log-framework-appender-by-id framework (cider-log-appender-id appender))))
+    (cider-log-framework-appender framework (cider-log-appender-id appender))))
 
 ;; Log Consumer
 
@@ -928,6 +928,7 @@
   :variable 'cider-log-appender-threshold)
 
 (transient-define-infix cider-log--buffer-option ()
+  :always-read t
   :class 'cider-log--lisp-variable
   :description "Buffer"
   :key "=b"
@@ -1033,7 +1034,7 @@
           cider-log--threads-filter (nrepl-dict-get filters "threads"))))
 
 (defun cider-log--ensure-initialized (framework &optional appender consumer)
-  "Ensure that FRAMEWORK, APPENDER and optionally CONSUMER are initialized."
+  "Ensure that the given FRAMEWORK, APPENDER and CONSUMER are initialized."
   (setq cider-log-framework framework
         cider-log-framework-name (cider-log-framework-name framework))
   (when appender
@@ -1069,7 +1070,7 @@
 (defun cider-log--interactive-appender-arguments ()
   "Return the interactive arguments for a appender transient."
   (let ((framework (cider-log--current-framework)))
-    (list framework (cider-log-framework-appender-by-id framework cider-log-appender-id))))
+    (list framework (cider-log-framework-appender framework cider-log-appender-id))))
 
 (transient-define-prefix cider-log-appender-add (framework appender)
   "Show the menu to add a Cider log appender."
@@ -1111,6 +1112,7 @@
   (cider-log--ensure-initialized framework appender)
   (transient-setup 'cider-log-appender-update))
 
+;;;###autoload (autoload 'cider-log-appender "cider-log" "Show the Cider log appender menu." t)
 (transient-define-prefix cider-log-appender (framework appender)
   "Show the Cider log appender menu."
   :history-key 'cider-log-appender
@@ -1139,7 +1141,7 @@
 (defun cider-log--interactive-consumer-arguments ()
   "Return the interactive arguments for a consumer transient."
   (let* ((framework (cider-log--current-framework))
-         (appender (cider-log-framework-appender-by-id framework cider-log-appender-id)))
+         (appender (cider-log-framework-appender framework cider-log-appender-id)))
     (list framework appender
           (if (and appender cider-log-consumer)
               (seq-find (lambda (consumer)
@@ -1182,6 +1184,7 @@
   (cider-log--ensure-initialized framework appender consumer)
   (transient-setup 'cider-log-consumer-update))
 
+;;;###autoload (autoload 'cider-log-consumer "cider-log" "Show the Cider log consumer menu." t)
 (transient-define-prefix cider-log-consumer (framework appender consumer)
   "Show the Cider log consumer menu."
   :history-key 'cider-log-consumer
@@ -1223,6 +1226,7 @@
   (cider-log--ensure-initialized framework appender)
   (transient-setup 'cider-log-event-search))
 
+;;;###autoload (autoload 'cider-log-event "cider-log" "Show the Cider log event menu." t)
 (transient-define-prefix cider-log-event (framework appender)
   "Show the Cider log event menu."
   :history-key 'cider-log-event
