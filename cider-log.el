@@ -962,14 +962,6 @@
   :reader #'cider-log--read-exceptions
   :variable 'cider-log--exceptions-filter)
 
-(transient-define-infix cider-log--framework-option ()
-  :class 'cider-log--lisp-variable
-  :description "Framework"
-  :key "=f"
-  :prompt "Log framework: "
-  :reader #'cider-log--read-framework-name
-  :variable 'cider-log-framework-name)
-
 (transient-define-infix cider-log--level-option ()
   :argument "--level="
   :class 'cider-log--lisp-variable
