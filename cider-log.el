@@ -907,14 +907,6 @@
 
 ;; Transient options
 
-(transient-define-infix cider-log--appender-option ()
-  :class 'cider-log--lisp-variable
-  :description "Appender"
-  :key "=a"
-  :prompt "Log appender: "
-  :reader #'cider-log--read-appender-id
-  :variable 'cider-log-appender-id)
-
 (transient-define-infix cider-log--appender-size-option ()
   :always-read t
   :argument "--size="
