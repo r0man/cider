@@ -1062,6 +1062,20 @@
       (cider-log--do-add-appender framework appender)
       (setq cider-log--initialized-p t))))
 
+;; Log Framework Transient
+
+;;;###autoload (autoload 'cider-log-framework "cider-log" "Show the Cider log framework menu." t)
+(transient-define-prefix cider-log-framework (framework)
+  "Show the Cider log framework menu."
+  [["Cider Log Framework"
+    ("b" cider-log-set-buffer)
+    ("j" cider-log-framework-browse-javadoc)
+    ("s" cider-log-set-framework)
+    ("w" cider-log-framework-browse-website)]]
+  (interactive (list (cider-log--framework)))
+  (cider-log--ensure-initialized framework)
+  (transient-setup 'cider-log-framework))
+
 ;; Log Appender Transients
 
 (defun cider-log--interactive-appender-arguments ()
