@@ -648,6 +648,21 @@
   "Return the log event at point."
   (get-text-property (point) :cider-log-event))
 
+(defun cider-log-info ()
+  "Show the current log buffer, framework, appender and consumer."
+  (interactive)
+  (message "%s"
+           (string-join
+            (list (when cider-log-buffer
+                    (format "Buffer: %s" (cider-log--bold cider-log-buffer)))
+                  (when cider-log-framework-name
+                    (format "Framework: %s" (cider-log--bold cider-log-framework-name)))
+                  (when cider-log-appender-id
+                    (format "Appender: %s" (cider-log--bold cider-log-appender-id)))
+                  (when-let (id (and cider-log-consumer (cider-log-consumer-id cider-log-consumer)))
+                    (format "Consumer: %s" (cider-log--bold id))))
+            " ")))
+
 ;; Framework actions
 
 (transient-define-suffix cider-log-framework-browse-javadoc (framework)
@@ -1339,6 +1354,7 @@
     (define-key map (kbd "C-c l c") #'cider-log-consumer)
     (define-key map (kbd "C-c l e") #'cider-log-event)
     (define-key map (kbd "C-c l f") #'cider-log-framework)
+    (define-key map (kbd "C-c l i") #'cider-log-info)
     (define-key map (kbd "C-c l l") #'cider-log)
     (define-key map (kbd "E") 'cider-log-event-show-stacktrace)
     (define-key map (kbd "F") 'cider-log-event-pretty-print)

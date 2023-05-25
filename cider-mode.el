@@ -534,6 +534,7 @@ higher precedence."
     (define-key map (kbd "C-c l c") #'cider-log-consumer)
     (define-key map (kbd "C-c l e") #'cider-log-event)
     (define-key map (kbd "C-c l f") #'cider-log-framework)
+    (define-key map (kbd "C-c l i") #'cider-log-info)
     (define-key map (kbd "C-c l l") #'cider-log)
     (dolist (variable '(cider-mode-interactions-menu
                         cider-mode-eval-menu
