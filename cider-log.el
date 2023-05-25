@@ -119,8 +119,6 @@
   (when-let (buffer (get-buffer (or buffer cider-log-buffer)))
     (> (buffer-size buffer) 0)))
 
-(get-buffer nil)
-
 (defun cider-log--description-set-framework ()
   "Return the description for the set framework action."
   (format "Select framework %s"
