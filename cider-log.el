@@ -119,6 +119,13 @@
   (when-let (buffer (get-buffer (or buffer cider-log-buffer)))
     (> (buffer-size buffer) 0)))
 
+(defun cider-log--description-clear-events-buffer ()
+  "Return the description for the set framework action."
+  (format "Clear %s buffer"
+          (if cider-log-buffer
+              (cider-log--format-value cider-log-buffer)
+            (propertize "n/a" 'face 'font-lock-comment-face))))
+
 (defun cider-log--description-set-framework ()
   "Return the description for the set framework action."
   (format "Select framework %s"
@@ -132,6 +139,13 @@
           (if cider-log-buffer
               (cider-log--format-value cider-log-buffer)
             (propertize "n/a" 'face 'font-lock-comment-face))))
+
+(defun cider-log--buffers-in-major-mode (expected)
+  "Return all buffers which are in the EXPECTED major mode."
+  (seq-filter (lambda (buffer)
+                (with-current-buffer buffer
+                  (equal expected major-mode)))
+              (buffer-list)))
 
 (defun cider-log--format-time (time)
   "Format TIME in ISO8601 format."
@@ -331,7 +345,10 @@
 
 (defun cider-log--read-buffer (&optional prompt initial-input history)
   "Read the log buffer from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
-  (read-string (or prompt "Buffer: ") (or initial-input cider-log-buffer) history cider-log-buffer))
+  (let ((table (seq-map #'buffer-name (cider-log--buffers-in-major-mode 'cider-log-mode))))
+    (completing-read (or prompt "Buffer: ") table nil nil
+                     (or initial-input cider-log-buffer)
+                     history cider-log-buffer)))
 
 (defun cider-log--read-exceptions (&optional prompt initial-input history)
   "Read a list of exceptions from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
@@ -763,7 +780,7 @@
 
 (transient-define-suffix cider-log-event-clear-buffer (buffer)
   "Clear the Cider log events in BUFFER."
-  :description "Clear log event buffer"
+  :description #'cider-log--description-clear-events-buffer
   :inapt-if-not #'cider-log-buffer-clear-p
   (interactive (list cider-log-buffer))
   (when (get-buffer buffer)
