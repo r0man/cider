@@ -330,9 +330,11 @@
   `(:annotation-function
     ,(lambda (identifier)
        (when-let (dict (cadr (assoc identifier minibuffer-completion-table)))
-         (let ((annotation (string-join (seq-map (lambda (key) (nrepl-dict-get dict key)) keys) (or separator " "))))
+         (let ((annotation (string-join (seq-map (lambda (key) (nrepl-dict-get dict key)) keys)
+                                        (or separator " "))))
            (unless (string-blank-p annotation)
-             (propertize (format " - %s" (cider-log--strip-whitespace annotation)) 'face 'font-lock-comment-face)))))))
+             (propertize (format " - %s" (cider-log--strip-whitespace annotation))
+                         'face 'font-lock-comment-face)))))))
 
 (defun cider-log--read-appender-id (prompt initial-input history)
   "Read a appender from the minibuffer using PROMPT, INITIAL-INPUT and HISTORY."
@@ -866,7 +868,8 @@
   (interactive (list (cider-log--framework) (cider-log--appender) (cider-log-event-at-point)))
   (if event
       (when-let (event (cider-sync-request:log-format-event framework appender event))
-        (cider-popup-buffer cider-log-event-buffer cider-auto-select-error-buffer 'clojure-mode 'ancillary)
+        (cider-popup-buffer cider-log-event-buffer cider-auto-select-error-buffer
+                            'clojure-mode 'ancillary)
         (with-current-buffer cider-log-event-buffer
           (let ((inhibit-read-only t))
             (erase-buffer)
