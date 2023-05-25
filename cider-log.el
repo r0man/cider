@@ -1110,7 +1110,7 @@
 
 ;; Log Appender Transients
 
-(defun cider-log--interactive-appender-arguments ()
+(defun cider-log--appender-interactive-list ()
   "Return the interactive arguments for a appender transient."
   (let ((framework (cider-log--current-framework)))
     (list framework (cider-log-framework-appender framework cider-log-appender-id))))
@@ -1131,7 +1131,7 @@
    (cider-log--threads-option)]
   ["Actions"
    ("a" cider-log--do-add-appender)]
-  (interactive (cider-log--interactive-appender-arguments))
+  (interactive (cider-log--appender-interactive-list))
   (cider-log--ensure-initialized framework appender)
   (transient-setup 'cider-log-appender-add))
 
@@ -1151,7 +1151,7 @@
    (cider-log--threads-option)]
   ["Actions"
    ("u" cider-log--do-update-appender)]
-  (interactive (cider-log--interactive-appender-arguments))
+  (interactive (cider-log--appender-interactive-list))
   (cider-log--ensure-initialized framework appender)
   (transient-setup 'cider-log-appender-update))
 
@@ -1175,13 +1175,13 @@
    ("c" cider-log-appender-clear)
    ("k" cider-log-appender-kill)
    ("u" cider-log--do-update-appender)]
-  (interactive (cider-log--interactive-appender-arguments))
+  (interactive (cider-log--appender-interactive-list))
   (cider-log--ensure-initialized framework appender)
   (transient-setup 'cider-log-appender))
 
 ;; Log Consumer Transients
 
-(defun cider-log--interactive-consumer-arguments ()
+(defun cider-log--consumer-interactive-list ()
   "Return the interactive arguments for a consumer transient."
   (let* ((framework (cider-log--current-framework))
          (appender (cider-log-framework-appender framework cider-log-appender-id)))
@@ -1206,7 +1206,7 @@
    (cider-log--threads-option)]
   ["Actions"
    ("a" cider-log--do-add-consumer)]
-  (interactive (cider-log--interactive-consumer-arguments))
+  (interactive (cider-log--consumer-interactive-list))
   (cider-log--ensure-initialized framework appender consumer)
   (transient-setup 'cider-log-consumer-add))
 
@@ -1223,7 +1223,7 @@
    (cider-log--threads-option)]
   ["Actions"
    ("u" cider-log--do-update-consumer)]
-  (interactive (cider-log--interactive-consumer-arguments))
+  (interactive (cider-log--consumer-interactive-list))
   (cider-log--ensure-initialized framework appender consumer)
   (transient-setup 'cider-log-consumer-update))
 
@@ -1243,7 +1243,7 @@
    ("a" cider-log--do-add-consumer)
    ("k" cider-log-consumer-kill)
    ("u" cider-log--do-update-consumer)]
-  (interactive (cider-log--interactive-consumer-arguments))
+  (interactive (cider-log--consumer-interactive-list))
   (cider-log--ensure-initialized framework appender consumer)
   (transient-setup 'cider-log-consumer))
 
