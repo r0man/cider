@@ -571,7 +571,17 @@
                         logger message)
                 :cider-log-event event)))
 
-;; Major Mode
+(defun cider-log-kill-buffer-hook-handler ()
+  "Called from `kill-buffer-hook' to remove the consumer."
+  (when (eq 'cider-log-mode major-mode)
+    (when-let ((framework cider-log-framework)
+               (appender cider-log-appender)
+               (consumer cider-log-consumer))
+      (cider-log--remove-current-buffer-consumer)
+      (message "Removed %s event consumer %s from appender %s."
+               (cider-log-framework-display-name framework)
+               (cider-log-consumer-display-name consumer)
+               (cider-log-appender-display-name appender)))))
 
 (defun cider-log-select-framework ()
   "Select the log framework."
@@ -1347,19 +1357,7 @@
   (when (fboundp 'evil-set-initial-state)
     (evil-set-initial-state 'cider-log-mode 'emacs)))
 
-(defun cider-log-kill-buffer ()
-  "Called from `kill-buffer-hook' to remove the consumer."
-  (when (eq 'cider-log-mode major-mode)
-    (when-let ((framework cider-log-framework)
-               (appender cider-log-appender)
-               (consumer cider-log-consumer))
-      (cider-log--remove-current-buffer-consumer)
-      (message "Removed %s event consumer %s from appender %s."
-               (cider-log-framework-display-name framework)
-               (cider-log-consumer-display-name consumer)
-               (cider-log-appender-display-name appender)))))
-
-(add-hook 'kill-buffer-hook #'cider-log-kill-buffer)
+(add-hook 'kill-buffer-hook #'cider-log-kill-buffer-hook-handler)
 
 (provide 'cider-log)
 
