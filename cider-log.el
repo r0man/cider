@@ -561,7 +561,8 @@
   (let ((frameworks (cider-sync-request:log-frameworks)))
     (cond ((= 1 (length frameworks))
            (car frameworks))
-          (t (cider-log--read-framework)))))
+          (t (let ((name (cider-log--read-framework-name)))
+               (cider-log-framework-by-name frameworks name))))))
 
 (defun cider-log--current-framework ()
   "Return the log framework by the name bound to `cider-log-framework-name'."
