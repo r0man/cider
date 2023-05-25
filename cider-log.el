@@ -897,12 +897,13 @@
                (appender cider-log-appender)
                (event (cider-log-event-at-point)))
       (let ((cider-auto-select-error-buffer nil))
-        (when (get-buffer-window cider-error-buffer)
-          (save-window-excursion (cider-log-event-show-stacktrace framework appender event)))
-        (when (get-buffer-window cider-inspector-buffer)
-          (save-window-excursion (cider-log-event-inspect framework appender event)))
-        (when (get-buffer-window cider-log-event-buffer)
-          (save-window-excursion (cider-log-event-pretty-print framework appender event)))))))
+        (save-window-excursion
+          (when (get-buffer-window cider-error-buffer)
+            (cider-log-event-show-stacktrace framework appender event))
+          (when (get-buffer-window cider-inspector-buffer)
+            (cider-log-event-inspect framework appender event))
+          (when (get-buffer-window cider-log-event-buffer)
+            (cider-log-event-pretty-print framework appender event)))))))
 
 (defun cider-log-event-previous-line (&optional n)
   "Move N lines backward."
