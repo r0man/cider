@@ -557,7 +557,7 @@
 (transient-define-suffix cider-log-set-framework (framework-name)
   "Set the current log framework to FRAMEWORK-NAME."
   :description (lambda ()
-                 (format "Select log framework %s"
+                 (format "Select framework %s"
                          (cider-log--format-value cider-log-framework-name)))
   (interactive (list (cider-log--read-framework-name)))
   (setq cider-log-framework-name framework-name))
@@ -565,7 +565,7 @@
 (transient-define-suffix cider-log-set-buffer (buffer)
   "Set the current log buffer to BUFFER."
   :description (lambda ()
-                 (format "Select log event buffer %s"
+                 (format "Select buffer %s"
                          (cider-log--format-value cider-log-buffer)))
   (interactive (list (cider-log--read-buffer)))
   (setq cider-log-buffer buffer))
