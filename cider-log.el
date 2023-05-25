@@ -1086,10 +1086,7 @@
 (transient-define-prefix cider-log-appender-add (framework appender)
   "Show the menu to add a Cider log appender."
   :history-key 'cider-log-appender
-  ["Cider Add Log Appender\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)]
-  ["Settings:"
+  ["Cider Log Appender\n\nSettings:"
    (cider-log--appender-size-option)
    (cider-log--appender-threshold-option)]
   ["Filters:"
@@ -1109,10 +1106,7 @@
 (transient-define-prefix cider-log-appender-update (framework appender)
   "Show the menu to update a Cider log appender."
   :history-key 'cider-log-appender
-  ["Cider Update Log Appender\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)]
-  ["Settings:"
+  ["Cider Log Appender\n\nSettings:"
    (cider-log--appender-size-option)
    (cider-log--appender-threshold-option)]
   ["Filters:"
@@ -1132,10 +1126,7 @@
 (transient-define-prefix cider-log-appender (framework appender)
   "Show the Cider log appender menu."
   :history-key 'cider-log-appender
-  ["Cider Log Appender\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)]
-  ["Settings:"
+  ["Cider Log Appender\n\nSettings:"
    (cider-log--appender-size-option)
    (cider-log--appender-threshold-option)]
   ["Filters:"
@@ -1172,10 +1163,7 @@
 (transient-define-prefix cider-log-consumer-add (framework appender consumer)
   "Show the menu to add a Cider log consumer."
   :history-key 'cider-log-consumer
-  ["Cider Add Log Consumer\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)]
-  ["Filters:"
+  ["Cider Log Consumer\n\nFilters:"
    (cider-log--end-time-option)
    (cider-log--exceptions-option)
    (cider-log--level-option)
@@ -1192,10 +1180,7 @@
 (transient-define-prefix cider-log-consumer-update (framework appender consumer)
   "Show the menu to update a Cider log consumer."
   :history-key 'cider-log-consumer
-  ["Cider Update Log Consumer\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)]
-  ["Filters:"
+  ["Cider Log Consumer\n\nFilters:"
    (cider-log--end-time-option)
    (cider-log--exceptions-option)
    (cider-log--level-option)
@@ -1212,10 +1197,7 @@
 (transient-define-prefix cider-log-consumer (framework appender consumer)
   "Show the Cider log consumer menu."
   :history-key 'cider-log-consumer
-  ["Cider Log Consumer\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)]
-  ["Filters:"
+  ["Cider Log Consumer\n\nFilters:"
    (cider-log--end-time-option)
    (cider-log--exceptions-option)
    (cider-log--level-option)
@@ -1236,11 +1218,7 @@
 (transient-define-prefix cider-log-event-search (framework appender)
   "Search the search log events menu."
   :history-key 'cider-log-event
-  ["Cider Search Log Event\n"
-   (cider-log--framework-option)
-   (cider-log--appender-option)
-   (cider-log--buffer-option)]
-  ["Pagination:"
+  ["Cider Log Event\n\nPagination:"
    (cider-log--limit-option)
    (cider-log--offset-option)]
   ["Filters:"
@@ -1322,10 +1300,10 @@
 (defvar cider-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map logview-mode-map)
-    (define-key map (kbd "C") 'cider-log)
     (define-key map (kbd "C-c l a") #'cider-log-appender)
     (define-key map (kbd "C-c l c") #'cider-log-consumer)
     (define-key map (kbd "C-c l e") #'cider-log-event)
+    (define-key map (kbd "C-c l f") #'cider-log-framework)
     (define-key map (kbd "C-c l l") #'cider-log)
     (define-key map (kbd "E") 'cider-log-event-show-stacktrace)
     (define-key map (kbd "F") 'cider-log-event-pretty-print)
