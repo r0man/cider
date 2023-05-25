@@ -556,13 +556,17 @@
 
 (transient-define-suffix cider-log-set-framework (framework-name)
   "Set the current log framework to FRAMEWORK-NAME."
-  :description "Select log framework"
+  :description (lambda ()
+                 (format "Select log framework %s"
+                         (cider-log--format-value cider-log-framework-name)))
   (interactive (list (cider-log--read-framework-name)))
   (setq cider-log-framework-name framework-name))
 
 (transient-define-suffix cider-log-set-buffer (buffer)
   "Set the current log buffer to BUFFER."
-  :description "Select log buffer"
+  :description (lambda ()
+                 (format "Select log event buffer %s"
+                         (cider-log--format-value cider-log-buffer)))
   (interactive (list (cider-log--read-buffer)))
   (setq cider-log-buffer buffer))
 
@@ -1067,7 +1071,7 @@
 ;;;###autoload (autoload 'cider-log-framework "cider-log" "Show the Cider log framework menu." t)
 (transient-define-prefix cider-log-framework (framework)
   "Show the Cider log framework menu."
-  [["Cider Log Framework"
+  [["Cider Log Framework\n\nActions:"
     ("b" cider-log-set-buffer)
     ("j" cider-log-framework-browse-javadoc)
     ("s" cider-log-set-framework)
