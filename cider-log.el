@@ -61,6 +61,13 @@
   :safe #'stringp
   :type 'string)
 
+(defcustom cider-log-max-message-length 500
+  "The maximum length of the log message to display."
+  :group 'cider
+  :package-version '(cider . "1.7.0")
+  :safe #'integerp
+  :type 'integer)
+
 (defcustom cider-log-pagination-limit 250
   "The maximum number of log events to return when searching events."
   :group 'cider
@@ -570,7 +577,11 @@
                           (format "%s" timestamp))
                         thread
                         (upcase level)
-                        logger message)
+                        logger
+                        (if (and (stringp message)
+                                 (numberp cider-log-max-message-length))
+                            (substring message 0 (min (length message) cider-log-max-message-length))
+                          ""))
                 :cider-log-event event)))
 
 (defun cider-log-kill-buffer-hook-handler ()
