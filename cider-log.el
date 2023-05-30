@@ -1,8 +1,8 @@
 ;;; cider-log.el --- Log inspection functionality for Clojure -*- lexical-binding: t -*-
 
-;; Copyright © 2023 Nubank, Bozhidar Batsov and CIDER contributors
+;; Copyright © 2023 Bozhidar Batsov and CIDER contributors
 
-;; Author: Roman Scherer <roman.scherer@nubank.com.br>
+;; Author: Roman Scherer <roman@burningswell.com>
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

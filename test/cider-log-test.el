@@ -1,8 +1,8 @@
 ;;; cider-log-tests.el  -*- lexical-binding: t; -*-
 
-;; Copyright © 2023 Nubank, Bozhidar Batsov and CIDER contributors
+;; Copyright © 2023 Bozhidar Batsov and CIDER contributors
 
-;; Author: Roman Scherer <roman.scherer@nubank.com.br>
+;; Author: Roman Scherer <roman@burningswell.com>
 
 ;; This file is NOT part of GNU Emacs.
 
