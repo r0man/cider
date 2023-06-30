@@ -742,8 +742,9 @@
   (cider-sync-request:stateful-check-specifications))
 
 ;;;###autoload
-(defun cider-stateful-check-run (specification options)
+(transient-define-suffix cider-stateful-check-run (specification options)
   "Run the Stateful Check SPECIFICATION using OPTIONS."
+  :description "Run specification"
   (interactive (list (cider-stateful-check--read-specification (cider-stateful-check--specifications))
                      (cider-stateful-check-options)))
   (nrepl-dbind-response specification (ns var)
@@ -775,8 +776,9 @@
       (cider-stateful-check-options)))
 
 ;;;###autoload
-(defun cider-stateful-check-rerun (options)
+(transient-define-suffix cider-stateful-check-rerun (options)
   "Rerun the Stateful Check specification with OPTIONS."
+  :description "Rerun specification"
   (interactive (list (cider-stateful-check--rerun-options)))
   (if (get-buffer cider-stateful-check-buffer)
       (with-current-buffer cider-stateful-check-buffer
@@ -786,8 +788,9 @@
     (user-error "No Stateful Check specification to re-run")))
 
 ;;;###autoload
-(defun cider-stateful-check-scan ()
+(transient-define-suffix cider-stateful-check-scan ()
   "Scan all public vars and test runs for Stateful Check specifications."
+  :description "Scan vars and test reports for specifications"
   (interactive)
   (let ((old-specs (cider-sync-request:stateful-check-specifications))
         (new-specs (cider-sync-request:stateful-check-scan)))
@@ -849,16 +852,15 @@
   (easy-menu-define cider-stateful-check-mode-menu keymap
     "Menu for CIDER's Stateful Check debugger."
     `("CIDER Stateful Check"
-      ["Inspect object at point" cider-stateful-check-operate-on-point]
       ["Re-run specification" cider-stateful-check-rerun]
-      ["Refresh" cider-stateful-check-refresh]
       ["Run specification" cider-stateful-check-run]
+      ["Scan specifications" cider-stateful-check-scan]
       "--"
+      ["Inspect object at point" cider-stateful-check-operate-on-point]
       ["Next Inspectable Object" cider-inspector-next-inspectable-object]
       ["Previous Inspectable Object" cider-inspector-previous-inspectable-object]
       "--"
-      ["Quit" cider-popup-buffer-quit-function]
-      )))
+      ["Quit" cider-popup-buffer-quit-function])))
 
 (defvar cider-stateful-check-mode-map
   (let ((map (make-sparse-keymap)))
@@ -872,7 +874,6 @@
     (define-key map "e" #'cider-stateful-check-evaluate-step)
     (define-key map "f" #'forward-char)
     (define-key map "n" #'cider-stateful-check-next-execution)
-    (define-key map "o" #'cider-stateful-check-set-options)
     (define-key map "p" #'cider-stateful-check-previous-execution)
     (define-key map (kbd "C-c C-z") #'cider-switch-to-repl-buffer)
     (define-key map (kbd "RET") #'cider-stateful-check-operate-on-point)
@@ -903,7 +904,6 @@
             (define-key map "e" #'cider-stateful-check-evaluate-step)
             (define-key map "f" #'forward-char)
             (define-key map "n" #'cider-stateful-check-next-execution)
-            (define-key map "o" #'cider-stateful-check-set-options)
             (define-key map "p" #'cider-stateful-check-previous-execution)
             (define-key map (kbd "C-c C-z") #'cider-switch-to-repl-buffer)
             (define-key map (kbd "RET") #'cider-stateful-check-operate-on-point)
@@ -996,9 +996,9 @@
   :transient t
   :variable 'cider-stateful-check-report-command-frequency-p)
 
-(transient-define-prefix cider-stateful-check-set-options ()
+(transient-define-prefix cider-stateful-check ()
   "A transient menu to set the Stateful Check specification run options."
-  [["Genertion Options"
+  [["Stateful Check\n\nGeneration Options"
     (cider-stateful-check:gen-max-length)
     (cider-stateful-check:gen-max-size)
     (cider-stateful-check:gen-threads)]
@@ -1009,7 +1009,11 @@
     (cider-stateful-check:run-timeout-ms)]
    ["Report Options"
     (cider-stateful-check:report-command-frequency-p)
-    (cider-stateful-check:report-first-case-p)]])
+    (cider-stateful-check:report-first-case-p)]]
+  ["Actions"
+   ("a" cider-stateful-check-rerun)
+   ("r" cider-stateful-check-run)
+   ("s" cider-stateful-check-scan)])
 
 (advice-add 'cider-test-render-assertion :around #'cider-stateful-check--render-assertion)
 
