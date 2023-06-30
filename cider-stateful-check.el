@@ -39,13 +39,6 @@
 
 (require 'ansi-color)
 (require 'button)
-(require 'cl-lib)
-(require 'easymenu)
-(require 'map)
-(require 'seq)
-(require 'subr-x)
-(require 'transient)
-
 (require 'cider-client)
 (require 'cider-common)
 (require 'cider-inspector)
@@ -54,6 +47,12 @@
 (require 'cider-popup)
 (require 'cider-stacktrace)
 (require 'cider-test)
+(require 'cl-lib)
+(require 'easymenu)
+(require 'map)
+(require 'seq)
+(require 'subr-x)
+(require 'transient)
 
 (defcustom cider-stateful-check-buffer "*stateful-check*"
   "The name of the Stateful Check buffer."
@@ -156,6 +155,8 @@
 (defvar-local cider-stateful-check--current-run nil
   "The Stateful Check run of the current buffer.")
 
+;; Stateful Check options
+
 (defun cider-stateful-check-gen-options ()
   "Return the Stateful Check generation options."
   (nrepl-dict "max-length" cider-stateful-check-gen-max-length
@@ -183,10 +184,6 @@
   (nrepl-dict "gen" (cider-stateful-check-gen-options)
               "report" (cider-stateful-check-report-options)
               "run" (cider-stateful-check-run-options)))
-
-(defun cider-stateful-check--thread-name (index)
-  "Return the thread name from `cider-stateful-check-thread-name-index' for INDEX."
-  (char-to-string (elt cider-stateful-check-thread-name-index index)))
 
 ;; NREPL operations
 
@@ -266,6 +263,19 @@
                   "options" ,options)
                 (cider-nrepl-send-request callback)))
 
+;; Misc
+
+(defun cider-stateful-check--delete-property-region (property)
+  "Delete region of at which PROPERTY changes, relative to the current point."
+  (let ((start (previous-single-property-change (point) property))
+        (end (next-single-property-change (point) property)))
+    (when (and start end)
+      (delete-region start end))))
+
+(defun cider-stateful-check--thread-name (index)
+  "Return the thread name from `cider-stateful-check-thread-name-index' for INDEX."
+  (char-to-string (elt cider-stateful-check-thread-name-index index)))
+
 ;; Specification
 
 (defun cider-stateful-check--specification-id (specification)
@@ -285,6 +295,12 @@
 (defun cider-stateful-check--run-pass-p (run)
   "Return non-nil if Stateful Check RUN passed, otherwise nil."
   (equal "true" (nrepl-dict-get run "pass?")))
+
+(defun cider-stateful-check--run-replace (run)
+  "Replace the Stateful Check run at point with RUN."
+  (let ((inhibit-read-only t))
+    (cider-stateful-check--delete-property-region 'cider-stateful-check-run)
+    (cider-stateful-check--insert-run run)))
 
 ;; Run
 
@@ -337,7 +353,7 @@
   (insert handle))
 
 (defun cider-stateful-check--render-argument (argument)
-  "Render the Stateful Check run object as an inspectable VALUE."
+  "Render the Stateful Check command ARGUMENT."
   (when (nrepl-dict-p argument)
     (nrepl-dbind-response argument (index symbolic)
       (cider-propertize-region
@@ -346,9 +362,9 @@
                 'mouse-face 'highlight)
         (insert (cider-font-lock-as-clojure symbolic))))))
 
-(defun cider-stateful-check--render-assertion (event)
-  "Render the test run EVENT into the current buffer."
-  (nrepl-dbind-response event (context message expected actual diffs error index gen-input)
+(defun cider-stateful-check--render-failure-event (failing-case event)
+  "Render the test assertion EVENT of FAILING-CASE into the current buffer."
+  (nrepl-dbind-response event (context message expected actual diffs error gen-input)
     (cl-flet ((insert-label (s)
                 (cider-insert (format "%14s: " s) 'font-lock-comment-face))
               (insert-align-label (s)
@@ -388,14 +404,14 @@
             (cider-propertize-region
                 (list 'cider-value-idx error
                       'mouse-face 'highlight)
-              (cider-stateful-check--render-error error))
+              (cider-stateful-check--render-error failing-case error))
             (insert "\n"))
           (when gen-input
             (insert-label "input")
             (insert (cider-font-lock-as-clojure gen-input)))
           (overlay-put (make-overlay beg (point)) 'font-lock-face bg))))))
 
-(defun cider-stateful-check--render-failure (failure)
+(defun cider-stateful-check--render-failure (failing-case failure)
   "Render the Stateful Check post-condition FAILURE."
   (when (nrepl-dict-p failure)
     (nrepl-dbind-response failure (events message)
@@ -404,7 +420,19 @@
             (when message
               (insert (format "      %s\n" message)))
           (seq-doseq (event events)
-            (cider-stateful-check--render-assertion event)))))))
+            (cider-stateful-check--render-failure-event failing-case event)))))))
+
+(defun cider-stateful-check--render-assertion (orig-fun &rest args)
+  ;; (message "display-buffer called with args %S" args)
+  (let ((test (elt args 1)))
+    (if-let (run (and (nrepl-dict-p test)
+                      (nrepl-dict-get test "stateful-check")))
+        (let ((run (cider-sync-request:stateful-check-analyze-test
+                    (format "%s/%s" (nrepl-dict-get test "ns") (nrepl-dict-get test "var")))))
+          (cider-stateful-check--insert-run run)
+          (cider-stateful-check-test-report-mode)
+          (format "%s/%s" (nrepl-dict-get test "ns") (nrepl-dict-get test "var")))
+      (apply orig-fun args))))
 
 (defun cider-stateful-check--show-error ()
   "Show the error at point in the stacktrace navigator."
@@ -487,11 +515,11 @@
           (cider-stateful-check--render-error failing-case execution))
       (insert "\n")
       (seq-doseq (failure failures)
-        (cider-stateful-check--render-failure failure)))))
+        (cider-stateful-check--render-failure failing-case failure)))))
 
 (defun cider-stateful-check--render-execution-long (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE in long form."
-  (nrepl-dbind-response execution (arguments command failures handle result)
+  (nrepl-dbind-response execution (arguments command failures handle)
     (cider-propertize-region (list 'cider-stateful-check-execution execution)
       (insert "    ")
       (cider-stateful-check--render-handle handle)
@@ -510,7 +538,7 @@
           (cider-stateful-check--render-error failing-case execution))
       (insert "\n")
       (seq-doseq (failure failures)
-        (cider-stateful-check--render-failure failure)))))
+        (cider-stateful-check--render-failure failing-case failure)))))
 
 (defun cider-stateful-check--render-execution (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE."
@@ -575,7 +603,7 @@
 
 (defun cider-stateful-check--render-footer (run)
   "Render the Stateful Check RUN footer."
-  (cider-propertize-region (list 'cider-stateful-check-run run)
+  (cider-propertize-region (list 'cider-stateful-check-footer run)
     (when-let (seed (nrepl-dict-get-in run '("seed")))
       (insert "\n")
       (cider-insert "Seed: " 'bold)
@@ -621,22 +649,26 @@
    (if (cider-stateful-check--run-pass-p run)
        (cider-stateful-check--success-message run)
      (cider-stateful-check--failure-message run)))
+  (insert "\n")
   (insert "\n"))
+
+(defun cider-stateful-check--insert-run (run)
+  "Insert the Stateful Check RUN into current buffer."
+  (cider-propertize-region (list 'cider-stateful-check-run run)
+    (unless (cider-stateful-check--run-pass-p run)
+      (cider-stateful-check--render-first run)
+      (insert "\n")
+      (cider-stateful-check--render-smallest run))))
 
 (defun cider-stateful-check--render-run (buffer run)
   "Render the Stateful Check RUN into BUFFER."
   (with-current-buffer buffer
     (let ((inhibit-read-only t))
       (erase-buffer)
-      (cider-propertize-region (list 'cider-stateful-check-run run)
-        (setq cider-stateful-check--current-run run)
-        (cider-stateful-check--render-header run)
-        (unless (cider-stateful-check--run-pass-p run)
-          (insert "\n")
-          (cider-stateful-check--render-first run)
-          (insert "\n")
-          (cider-stateful-check--render-smallest run))
-        (cider-stateful-check--render-footer run)))))
+      (setq cider-stateful-check--current-run run)
+      (cider-stateful-check--render-header run)
+      (cider-stateful-check--insert-run run)
+      (cider-stateful-check--render-footer run))))
 
 (defun cider-stateful--show-run (run)
   "Show the Stateful Check RUN in a popup buffer."
@@ -646,15 +678,8 @@
     (cider-popup-buffer-display (current-buffer) cider-stateful-check-auto-select-buffer)
     (goto-char (point-min))))
 
-(defun cider-stateful-check-report (&optional arg)
-  "Find definition for test at point, if available, and show the run."
-  (interactive "P")
-  (when-let ((ns (get-text-property (point) 'ns))
-             (var (get-text-property (point) 'var)))
-    (when-let (analysis (cider-sync-request:stateful-check-analyze-test (format "%s/%s" ns var)))
-      (cider-stateful--show-run analysis))))
-
 (defun cider-stateful-check--query-at-point ()
+  "Return a NREPL dictionary describing the thing at point."
   (when-let (run (get-text-property (point) 'cider-stateful-check-run))
     (let ((query (nrepl-dict "run" (nrepl-dict-get run "id"))))
       (when (get-text-property (point) 'cider-stateful-check-first-case)
@@ -776,40 +801,38 @@
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
-      (with-current-buffer cider-stateful-check-buffer
-        (let ((line (line-number-at-pos))
-              (column (current-column)))
-          (cider-sync-request:stateful-check-evaluate-step
-           run case
-           (lambda (response)
-             (nrepl-dbind-response response (status stateful-check/evaluate-step)
-               (cond ((member "done" status)
-                      (with-current-buffer cider-stateful-check-buffer
-                        (cider-stateful-check--render-run cider-stateful-check-buffer stateful-check/evaluate-step)
-                        (goto-char (point-min))
-                        (forward-line (- line 1))
-                        (move-to-column column)))
-                     (t (message "Error while evaluating Stateful Check specification step.")))))))))))
+      (let ((buffer (current-buffer))
+            (line (line-number-at-pos))
+            (column (current-column)))
+        (cider-sync-request:stateful-check-evaluate-step
+         run case
+         (lambda (response)
+           (nrepl-dbind-response response (status stateful-check/evaluate-step)
+             (cond ((member "done" status)
+                    (with-current-buffer buffer
+                      (cider-stateful-check--run-replace stateful-check/evaluate-step)
+                      (goto-char (point-min))
+                      (forward-line (- line 1))
+                      (move-to-column column)))
+                   (t (message "Error while evaluating Stateful Check specification step."))))))))))
 
 (defun cider-stateful-check--next-thing (thing)
   "Move point to the next THING, a text property symbol, if one exists."
   (interactive)
-  (with-current-buffer cider-stateful-check-buffer
-    (when-let* ((pos (next-single-property-change (point) thing)))
-      (if (get-text-property pos thing)
-          (goto-char pos)
-        (when-let* ((pos (next-single-property-change pos thing)))
-          (goto-char pos))))))
+  (when-let* ((pos (next-single-property-change (point) thing)))
+    (if (get-text-property pos thing)
+        (goto-char pos)
+      (when-let* ((pos (next-single-property-change pos thing)))
+        (goto-char pos)))))
 
 (defun cider-stateful-check--previous-thing (thing)
   "Move point to the previous THING, a text property symbol, if one exists."
   (interactive)
-  (with-current-buffer cider-stateful-check-buffer
-    (when-let* ((pos (previous-single-property-change (point) thing)))
-      (if (get-text-property pos thing)
-          (goto-char pos)
-        (when-let* ((pos (previous-single-property-change pos thing)))
-          (goto-char pos))))))
+  (when-let* ((pos (previous-single-property-change (point) thing)))
+    (if (get-text-property pos thing)
+        (goto-char pos)
+      (when-let* ((pos (previous-single-property-change pos thing)))
+        (goto-char pos)))))
 
 (defun cider-stateful-check-next-execution ()
   "Move point to the next command execution, if one exists."
@@ -857,17 +880,34 @@
     map))
 
 (define-derived-mode cider-stateful-check-mode special-mode "Stateful Check"
-  "Major mode for debugging Stateful Check specifications.
-
-               \\{cider-stateful-check-mode-map}"
+  "Major mode for debugging Stateful Check specifications."
   (set-syntax-table clojure-mode-syntax-table)
   (setq-local cider-inspector-skip-uninteresting nil)
   (setq-local electric-indent-chars nil)
   (setq-local sesman-system 'CIDER)
   (setq-local truncate-lines t))
 
-(eval-after-load 'cider-test
-  (define-key cider-test-report-mode-map (kbd "c") #'cider-stateful-check-report))
+(define-minor-mode cider-stateful-check-test-report-mode
+  "Minor mode for debugging Stateful Check specifications in the CIDER test report."
+  :keymap (let ((map (make-sparse-keymap)))
+            (set-keymap-parent map cider-popup-buffer-mode-map)
+            (define-key map "P" #'cider-stateful-check-print-value-at-point)
+            (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
+            (define-key map "b" #'backward-char)
+            (define-key map "d" #'cider-test-ediff)
+            (define-key map "e" #'cider-stateful-check-evaluate-step)
+            (define-key map "f" #'forward-char)
+            (define-key map "n" #'cider-stateful-check-next-execution)
+            (define-key map "o" #'cider-stateful-check-set-options)
+            (define-key map "p" #'cider-stateful-check-previous-execution)
+            (define-key map (kbd "C-c C-z") #'cider-switch-to-repl-buffer)
+            (define-key map (kbd "RET") #'cider-stateful-check-operate-on-point)
+            (define-key map [(shift tab)] #'cider-inspector-previous-inspectable-object)
+            (define-key map [mouse-1] #'cider-stateful-check-operate-on-click)
+            (define-key map [tab] #'cider-inspector-next-inspectable-object)
+            ;; Emacs translates S-TAB to BACKTAB on X.
+            (define-key map [backtab] #'cider-inspector-previous-inspectable-object)
+            map))
 
 ;; Transient
 
@@ -965,6 +1005,8 @@
    ["Report Options"
     (cider-stateful-check:report-command-frequency-p)
     (cider-stateful-check:report-first-case-p)]])
+
+(advice-add 'cider-test-render-assertion :around #'cider-stateful-check--render-assertion)
 
 (provide 'cider-stateful-check)
 
