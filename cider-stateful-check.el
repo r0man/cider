@@ -844,9 +844,26 @@
   (interactive)
   (cider-stateful-check--previous-thing 'cider-stateful-check-execution))
 
+(defun cider-stateful-check--define-menu (keymap)
+  "Define a Stateful Check menu for the KEYMAP."
+  (easy-menu-define cider-stateful-check-mode-menu keymap
+    "Menu for CIDER's Stateful Check debugger."
+    `("CIDER Stateful Check"
+      ["Inspect object at point" cider-stateful-check-operate-on-point]
+      ["Re-run specification" cider-stateful-check-rerun]
+      ["Refresh" cider-stateful-check-refresh]
+      ["Run specification" cider-stateful-check-run]
+      "--"
+      ["Next Inspectable Object" cider-inspector-next-inspectable-object]
+      ["Previous Inspectable Object" cider-inspector-previous-inspectable-object]
+      "--"
+      ["Quit" cider-popup-buffer-quit-function]
+      )))
+
 (defvar cider-stateful-check-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map cider-popup-buffer-mode-map)
+    (cider-stateful-check--define-menu map)
     (define-key map "P" #'cider-stateful-check-print-value-at-point)
     (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
     (define-key map "a" #'cider-stateful-check-rerun)
@@ -864,19 +881,6 @@
     (define-key map [tab] #'cider-inspector-next-inspectable-object)
     ;; Emacs translates S-TAB to BACKTAB on X.
     (define-key map [backtab] #'cider-inspector-previous-inspectable-object)
-    (easy-menu-define cider-stateful-check-mode-menu map
-      "Menu for CIDER's Stateful Check debugger."
-      `("CIDER Stateful Check"
-        ["Inspect object at point" cider-stateful-check-operate-on-point]
-        ["Re-run specification" cider-stateful-check-rerun]
-        ["Refresh" cider-stateful-check-refresh]
-        ["Run specification" cider-stateful-check-run]
-        "--"
-        ["Next Inspectable Object" cider-inspector-next-inspectable-object]
-        ["Previous Inspectable Object" cider-inspector-previous-inspectable-object]
-        "--"
-        ["Quit" cider-popup-buffer-quit-function]
-        ))
     map))
 
 (define-derived-mode cider-stateful-check-mode special-mode "Stateful Check"
@@ -891,6 +895,7 @@
   "Minor mode for debugging Stateful Check specifications in the CIDER test report."
   :keymap (let ((map (make-sparse-keymap)))
             (set-keymap-parent map cider-popup-buffer-mode-map)
+            (cider-stateful-check--define-menu map)
             (define-key map "P" #'cider-stateful-check-print-value-at-point)
             (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
             (define-key map "b" #'backward-char)
