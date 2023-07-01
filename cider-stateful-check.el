@@ -270,7 +270,9 @@
   (let ((start (previous-single-property-change (point) property))
         (end (next-single-property-change (point) property)))
     (when (and start end)
-      (delete-region start end))))
+      (let ((inhibit-read-only t))
+        (delete-region start end)
+        (list start end)))))
 
 (defun cider-stateful-check--thread-name (index)
   "Return the thread name from `cider-stateful-check-thread-name-index' for INDEX."
@@ -299,8 +301,12 @@
 (defun cider-stateful-check--run-replace (run)
   "Replace the Stateful Check run at point with RUN."
   (let ((inhibit-read-only t))
-    (cider-stateful-check--delete-property-region 'cider-stateful-check-run)
-    (cider-stateful-check--insert-run run)))
+    (when (cider-stateful-check--delete-property-region 'cider-stateful-check-run)
+      ;; Render into a temp buffer first, to avoid issues with `insert-rectangle'
+      ;; messing up text after the replaced region.
+      (insert (with-temp-buffer
+                (cider-stateful-check--insert-run run)
+                (buffer-string))))))
 
 ;; Run
 
@@ -697,8 +703,8 @@
         (when-let (failure (get-text-property (point) 'cider-stateful-check-failure))
           (nrepl-dict-put query "failure" (nrepl-dict-get failure "index")))
         (when-let (event (get-text-property (point) 'cider-stateful-check-test-event))
-          (nrepl-dict-put query "event" (nrepl-dict-get event "index")))
-        query))))
+          (nrepl-dict-put query "event" (nrepl-dict-get event "index"))))
+      query)))
 
 (defun cider-stateful-check-inspect (query)
   "Inspect the Stateful Check run object described by QUERY."
@@ -815,6 +821,7 @@
            (nrepl-dbind-response response (status stateful-check/evaluate-step)
              (cond ((member "done" status)
                     (with-current-buffer buffer
+                      (setq cider-stateful-check--current-run stateful-check/evaluate-step)
                       (cider-stateful-check--run-replace stateful-check/evaluate-step)
                       (goto-char (point-min))
                       (forward-line (- line 1))
