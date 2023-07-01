@@ -818,15 +818,18 @@
         (cider-sync-request:stateful-check-evaluate-step
          run case
          (lambda (response)
-           (nrepl-dbind-response response (status stateful-check/evaluate-step)
-             (cond ((member "done" status)
-                    (with-current-buffer buffer
-                      (setq cider-stateful-check--current-run stateful-check/evaluate-step)
-                      (cider-stateful-check--run-replace stateful-check/evaluate-step)
-                      (goto-char (point-min))
-                      (forward-line (- line 1))
-                      (move-to-column column)))
-                   (t (message "Error while evaluating Stateful Check specification step."))))))))))
+           (nrepl-dbind-response response (out err status stateful-check/evaluate-step)
+             (cond (err (cider-emit-interactive-eval-err-output err))
+                   (out (cider-emit-interactive-eval-output out))
+                   (stateful-check/evaluate-step
+                       (with-current-buffer buffer
+                         (setq cider-stateful-check--current-run stateful-check/evaluate-step)
+                         (cider-stateful-check--run-replace stateful-check/evaluate-step)
+                         (goto-char (point-min))
+                         (forward-line (- line 1))
+                         (move-to-column column)))
+                   ((member "stateful-check/evaluate-step-error" status)
+                    (message "Error while evaluating Stateful Check specification step."))))))))))
 
 (defun cider-stateful-check--next-thing (thing)
   "Move point to the next THING, a text property symbol, if one exists."
