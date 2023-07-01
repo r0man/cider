@@ -422,16 +422,18 @@
           (seq-doseq (event events)
             (cider-stateful-check--render-failure-event failing-case event)))))))
 
-(defun cider-stateful-check--render-assertion (orig-fun &rest args)
-  ;; (message "display-buffer called with args %S" args)
+(defun cider-stateful-check--render-test (orig-fun &rest args)
   (let ((test (elt args 1)))
-    (if-let (run (and (nrepl-dict-p test)
-                      (nrepl-dict-get test "stateful-check")))
-        (let ((run (cider-sync-request:stateful-check-analyze-test
-                    (format "%s/%s" (nrepl-dict-get test "ns") (nrepl-dict-get test "var")))))
-          (cider-stateful-check--insert-run run)
-          (cider-stateful-check-test-report-mode)
-          (format "%s/%s" (nrepl-dict-get test "ns") (nrepl-dict-get test "var")))
+    (if-let (run (and (nrepl-dict-p test) (nrepl-dict-get test "stateful-check")))
+        (nrepl-dbind-response test (ns var type)
+          (cider-propertize-region (cider-intern-keys (cdr test))
+            (let ((run (cider-sync-request:stateful-check-analyze-test (format "%s/%s" ns var)))
+                  (type-face (cider-test-type-simple-face type)))
+              (cider-insert (capitalize type) type-face nil " in ")
+              (cider-insert var 'font-lock-function-name-face t)
+              (cider-stateful-check--insert-run run)
+              (cider-stateful-check--render-footer run)
+              (cider-stateful-check-test-report-mode))))
       (apply orig-fun args))))
 
 (defun cider-stateful-check--show-error ()
@@ -1015,7 +1017,7 @@
    ("r" cider-stateful-check-run)
    ("s" cider-stateful-check-scan)])
 
-(advice-add 'cider-test-render-assertion :around #'cider-stateful-check--render-assertion)
+(advice-add 'cider-test-render-assertion :around #'cider-stateful-check--render-test)
 
 (provide 'cider-stateful-check)
 
