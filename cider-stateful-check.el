@@ -1,4 +1,4 @@
-;;; cider-stateful-check.el --- Stateful Check Debugger & Inspector -*- lexical-binding: t -*-
+;;; cider-stateful-check.el --- Stateful Check Debugger -*- lexical-binding: t -*-
 
 ;; Copyright © 2023 r0man, Bozhidar Batsov and CIDER contributors
 
@@ -19,21 +19,20 @@
 
 ;; This file is not part of GNU Emacs.
 
+;; Stateful Check Debugger
+
 ;;; Commentary:
 
-;; This major mode provides a debugger and inspector for stateful-check test
-;; reports.  The failing cases of a stateful-test run are rendered in an
-;; interactive buffer.  Objects in that buffer, such as the arguments a command
-;; was invoked with, the result of invoking the command and the execution state
-;; can be viewed in the Cider Inspector.
+;; This major mode provides a debugger for Stateful Check specifications.  The
+;; failing test cases of a Stateful Check run are rendered in an interactive
+;; buffer.  Objects in that buffer, such as the arguments a command was invoked
+;; with, the result of invoking the command and the execution state can be
+;; viewed in the Cider Inspector.  The debugger also provides functionality to
+;; step through the commands of a failing test case.
 
-;;; Todo:
+;;; Usage:
 
-;; - Inspect the handle (their bindings, maybe ?)
-;; - Inspect the model state
-;; - A Stepping Debugger to step through executions
-
-;; Stateful Check Debugger
+;; Run M-x stateful-check to open the Stateful Check transient menu.
 
 ;;; Code:
 
