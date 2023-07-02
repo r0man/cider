@@ -274,6 +274,10 @@
         (delete-region start end)
         (list start end)))))
 
+(defun cider-stateful-check--strip-handle (handle)
+  "Strip the Stateful Check HANDLE of its angle brackets."
+  (when handle (string-trim (string-trim handle "#") "<" ">")))
+
 (defun cider-stateful-check--thread-name (index)
   "Return the thread name from `cider-stateful-check-thread-name-index' for INDEX."
   (char-to-string (elt cider-stateful-check-thread-name-index index)))
@@ -354,9 +358,20 @@
 
 ;; Render
 
-(defun cider-stateful-check--render-handle (handle)
-  "Render the Stateful Check execution HANDLE."
-  (insert handle))
+(defun cider-stateful-check--render-handle (failing-case execution)
+  "Render the Stateful Check EXECUTION handle of the FAILING-CASE."
+  (nrepl-dbind-response execution (handle result)
+    (nrepl-dbind-response result (evaluation)
+      (let ((eval-p (cider-stateful-check--failing-case-eval-p failing-case))
+            (states (cider-stateful-check--eval-states failing-case))
+            (state (cider-stateful-check--strip-handle handle)))
+        (cond ((and eval-p (member state states))
+               (cider-insert handle 'bold))
+              ((and eval-p evaluation)
+               (insert handle))
+              ((and eval-p (not evaluation))
+               (cider-insert handle 'font-lock-comment-face))
+              (t (insert handle)))))))
 
 (defun cider-stateful-check--render-argument (argument)
   "Render the Stateful Check command ARGUMENT."
@@ -509,7 +524,7 @@
   (nrepl-dbind-response execution (arguments command failures handle)
     (cider-propertize-region (list 'cider-stateful-check-execution execution)
       (insert "    ")
-      (cider-stateful-check--render-handle handle)
+      (cider-stateful-check--render-handle failing-case execution)
       (insert (cider-propertize " = " 'font-lock-comment-face)
               (cider-propertize "(" 'paren-face))
       (nrepl-dbind-response command (name)
@@ -530,7 +545,7 @@
   (nrepl-dbind-response execution (arguments command failures handle)
     (cider-propertize-region (list 'cider-stateful-check-execution execution)
       (insert "    ")
-      (cider-stateful-check--render-handle handle)
+      (cider-stateful-check--render-handle failing-case execution)
       (insert (cider-propertize " = " 'font-lock-comment-face)
               (cider-propertize "(" 'paren-face))
       (nrepl-dbind-response command (name)
@@ -583,6 +598,10 @@
 (defun cider-stateful-check--failing-case-eval-p (failing-case)
   "Return non-nil if FAILING-CASE is being evaluated, otherwise nil."
   (equal "true" (nrepl-dict-get failing-case "eval?")))
+
+(defun cider-stateful-check--eval-states (failing-case)
+  "Return the evaluation state of the FAILING-CASE or nil."
+  (nrepl-dict-get-in failing-case '("state-machine" "state")))
 
 (defun cider-stateful-check--render-eval-banner (failing-case)
   "Renders an [EVAL] banner if the failing FAILING-CASE is currently evaluated."
@@ -822,12 +841,12 @@
              (cond (err (cider-emit-interactive-eval-err-output err))
                    (out (cider-emit-interactive-eval-output out))
                    (stateful-check/evaluate-step
-                       (with-current-buffer buffer
-                         (setq cider-stateful-check--current-run stateful-check/evaluate-step)
-                         (cider-stateful-check--run-replace stateful-check/evaluate-step)
-                         (goto-char (point-min))
-                         (forward-line (- line 1))
-                         (move-to-column column)))
+                    (with-current-buffer buffer
+                      (setq cider-stateful-check--current-run stateful-check/evaluate-step)
+                      (cider-stateful-check--run-replace stateful-check/evaluate-step)
+                      (goto-char (point-min))
+                      (forward-line (- line 1))
+                      (move-to-column column)))
                    ((member "stateful-check/evaluate-step-error" status)
                     (message "Error while evaluating Stateful Check specification step."))))))))))
 
