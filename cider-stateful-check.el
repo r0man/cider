@@ -311,13 +311,18 @@
 
 (defun cider-stateful-check--run-replace (run)
   "Replace the Stateful Check run at point with RUN."
-  (let ((inhibit-read-only t))
+  (let ((inhibit-read-only t)
+        (line (line-number-at-pos))
+        (column (current-column)))
     (when (cider-stateful-check--delete-property-region 'cider-stateful-check-run)
       ;; Render into a temp buffer first, to avoid issues with `insert-rectangle'
       ;; messing up text after the replaced region.
       (insert (with-temp-buffer
                 (cider-stateful-check--insert-run run)
-                (buffer-string))))))
+                (buffer-string)))
+      (goto-char (point-min))
+      (forward-line (- line 1))
+      (move-to-column column))))
 
 ;; Run
 
@@ -838,9 +843,7 @@
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
-      (let ((buffer (current-buffer))
-            (line (line-number-at-pos))
-            (column (current-column)))
+      (let ((buffer (current-buffer)))
         (cider-sync-request:stateful-check-eval-step
          run case
          (lambda (response)
@@ -851,10 +854,7 @@
                     (let ((run stateful-check/eval-step))
                       (with-current-buffer buffer
                         (setq cider-stateful-check--current-run run)
-                        (cider-stateful-check--run-replace run)
-                        (goto-char (point-min))
-                        (forward-line (- line 1))
-                        (move-to-column column))))
+                        (cider-stateful-check--run-replace run))))
                    ((member "stateful-check/eval-step-error" status)
                     (message "Failed to evaluate Stateful Check command."))))))))))
 
@@ -864,9 +864,7 @@
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
-      (let ((buffer (current-buffer))
-            (line (line-number-at-pos))
-            (column (current-column)))
+      (let ((buffer (current-buffer)))
         (cider-sync-request:stateful-check-eval-stop
          run case
          (lambda (response)
@@ -877,10 +875,7 @@
                     (let ((run stateful-check/eval-stop))
                       (with-current-buffer buffer
                         (setq cider-stateful-check--current-run run)
-                        (cider-stateful-check--run-replace run)
-                        (goto-char (point-min))
-                        (forward-line (- line 1))
-                        (move-to-column column))))
+                        (cider-stateful-check--run-replace run))))
                    ((member "stateful-check/eval-stop-error" status)
                     (message "Failed to stop the Stateful Check evaluation."))))))))))
 
