@@ -834,7 +834,7 @@
 
 ;;;###autoload
 (defun cider-stateful-check-eval-step ()
-  "Step through a Stateful Check specification."
+  "Evaluate the command of a Stateful Check run."
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
@@ -848,18 +848,19 @@
              (cond (err (cider-emit-interactive-eval-err-output err))
                    (out (cider-emit-interactive-eval-output out))
                    (stateful-check/eval-step
-                    (with-current-buffer buffer
-                      (setq cider-stateful-check--current-run stateful-check/eval-step)
-                      (cider-stateful-check--run-replace stateful-check/eval-step)
-                      (goto-char (point-min))
-                      (forward-line (- line 1))
-                      (move-to-column column)))
+                    (let ((run stateful-check/eval-step))
+                      (with-current-buffer buffer
+                        (setq cider-stateful-check--current-run run)
+                        (cider-stateful-check--run-replace run)
+                        (goto-char (point-min))
+                        (forward-line (- line 1))
+                        (move-to-column column))))
                    ((member "stateful-check/eval-step-error" status)
-                    (message "Error while evaluating Stateful Check specification step."))))))))))
+                    (message "Failed to evaluate Stateful Check command."))))))))))
 
 ;;;###autoload
 (defun cider-stateful-check-eval-stop ()
-  "Stop through a Stateful Check specification."
+  "Stop the evaluation of a Stateful Check run."
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
@@ -873,14 +874,15 @@
              (cond (err (cider-emit-interactive-eval-err-output err))
                    (out (cider-emit-interactive-eval-output out))
                    (stateful-check/eval-stop
-                    (with-current-buffer buffer
-                      (setq cider-stateful-check--current-run stateful-check/eval-stop)
-                      (cider-stateful-check--run-replace stateful-check/eval-stop)
-                      (goto-char (point-min))
-                      (forward-line (- line 1))
-                      (move-to-column column)))
+                    (let ((run stateful-check/eval-stop))
+                      (with-current-buffer buffer
+                        (setq cider-stateful-check--current-run run)
+                        (cider-stateful-check--run-replace run)
+                        (goto-char (point-min))
+                        (forward-line (- line 1))
+                        (move-to-column column))))
                    ((member "stateful-check/eval-stop-error" status)
-                    (message "Error while stopping the Stateful Check evaluation."))))))))))
+                    (message "Failed to stop the Stateful Check evaluation."))))))))))
 
 (defun cider-stateful-check--next-thing (thing)
   "Move point to the next THING, a text property symbol, if one exists."
