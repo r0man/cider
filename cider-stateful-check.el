@@ -232,7 +232,7 @@
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "stateful-check/specifications")))
 
-(defun cider-sync-request:stateful-check-eval-step (run case callback)
+(defun cider-request:stateful-check-eval-step (run case callback)
   "Evaluate the current command for the failing CASE of RUN."
   (cider-ensure-op-supported "stateful-check/eval-step")
   (thread-first `("op" "stateful-check/eval-step"
@@ -240,7 +240,7 @@
                   "case", (or case "smallest"))
                 (cider-nrepl-send-request callback)))
 
-(defun cider-sync-request:stateful-check-eval-stop (run case callback)
+(defun cider-request:stateful-check-eval-stop (run case callback)
   "Stop the evaluation of the failing CASE of RUN."
   (cider-ensure-op-supported "stateful-check/eval-stop")
   (thread-first `("op" "stateful-check/eval-stop"
@@ -844,7 +844,7 @@
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
       (let ((buffer (current-buffer)))
-        (cider-sync-request:stateful-check-eval-step
+        (cider-request:stateful-check-eval-step
          run case
          (lambda (response)
            (nrepl-dbind-response response (out err status stateful-check/eval-step)
@@ -865,7 +865,7 @@
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
       (let ((buffer (current-buffer)))
-        (cider-sync-request:stateful-check-eval-stop
+        (cider-request:stateful-check-eval-stop
          run case
          (lambda (response)
            (nrepl-dbind-response response (out err status stateful-check/eval-stop)
