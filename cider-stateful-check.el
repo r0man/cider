@@ -942,7 +942,7 @@
     (cider-stateful-check--define-menu map)
     (define-key map "P" #'cider-stateful-check-print-value-at-point)
     (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
-    (define-key map "a" #'cider-stateful-check-rerun)
+    (define-key map "g" #'cider-stateful-check-rerun)
     (define-key map "b" #'backward-char)
     (define-key map "d" #'cider-test-ediff)
     (define-key map "e" #'cider-stateful-check-eval-step)
@@ -1088,7 +1088,7 @@
     (cider-stateful-check:report-command-frequency-p)
     (cider-stateful-check:report-first-case-p)]]
   ["Actions"
-   ("a" cider-stateful-check-rerun)
+   ("g" cider-stateful-check-rerun)
    ("r" cider-stateful-check-run)
    ("s" cider-stateful-check-scan)])
 
