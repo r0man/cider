@@ -893,6 +893,15 @@
                    ((member "stateful-check/eval-stop-error" status)
                     (message "Failed to stop the Stateful Check evaluation."))))))))))
 
+;;;###autoload
+(defun cider-stateful-check-toggle-first-case ()
+  "Toggle the display of the first failing case."
+  (interactive)
+  (when-let (run cider-stateful-check--current-run)
+    (setq cider-stateful-check-report-first-case-p
+          (not cider-stateful-check-report-first-case-p))
+    (cider-stateful-check--run-replace run)))
+
 (defun cider-stateful-check--next-thing (thing)
   "Move point to the next THING, a text property symbol, if one exists."
   (interactive)
@@ -940,6 +949,7 @@
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map cider-popup-buffer-mode-map)
     (cider-stateful-check--define-menu map)
+    (define-key map "t" #'cider-stateful-check-toggle-first-case)
     (define-key map "P" #'cider-stateful-check-print-value-at-point)
     (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
     (define-key map "g" #'cider-stateful-check-rerun)
@@ -972,13 +982,14 @@
   :keymap (let ((map (make-sparse-keymap)))
             (set-keymap-parent map cider-popup-buffer-mode-map)
             (cider-stateful-check--define-menu map)
+            (define-key map "t" #'cider-stateful-check-toggle-first-case)
             (define-key map "P" #'cider-stateful-check-print-value-at-point)
             (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
             (define-key map "b" #'backward-char)
             (define-key map "d" #'cider-test-ediff)
             (define-key map "e" #'cider-stateful-check-eval-step)
-            (define-key map "k" #'cider-stateful-check-eval-stop)
             (define-key map "f" #'forward-char)
+            (define-key map "k" #'cider-stateful-check-eval-stop)
             (define-key map "n" #'cider-stateful-check-next-execution)
             (define-key map "p" #'cider-stateful-check-previous-execution)
             (define-key map (kbd "C-c C-z") #'cider-switch-to-repl-buffer)
