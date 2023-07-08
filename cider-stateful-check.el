@@ -437,7 +437,8 @@
             (cider-propertize-region
                 (list 'cider-value-idx error
                       'mouse-face 'highlight)
-              (cider-stateful-check--render-error failing-case error))
+              (cider-stateful-check--render-error
+               failing-case (nrepl-dict "error" (nrepl-dict "real" error))))
             (insert "\n"))
           (when gen-input
             (insert-label "input")
@@ -485,28 +486,37 @@
                                                       'ancillary)
                                   (reverse causes)))))))))))
 
+
+
+(defun cider-stateful-check--failing-case-assume-immutable-results-p (failing-case)
+  "Return non-nil if FAILING-CASE was run with the assume-immutable-results option."
+  (equal "true" (nrepl-dict-get-in failing-case '("options" "run" "assume-immutable-results"))))
+
 (defun cider-stateful-check--render-result (failing-case execution)
   "Render the EXECUTION result of a Stateful Check FAILING-CASE."
-  (when-let (result (nrepl-dict-get execution "result"))
-    (nrepl-dbind-response result (evaluation real)
-      (cider-propertize-region
-          (list 'cider-stateful-check-result result
-                'cider-value-idx result
-                'mouse-face 'highlight)
-        (cond
-         ((and (cider-stateful-check--failing-case-eval-p failing-case) evaluation)
-          (insert (cider-font-lock-as-clojure evaluation)))
-         ((and (cider-stateful-check--failing-case-eval-p failing-case) real)
-          (insert (cider-propertize real 'font-lock-comment-face)))
-         (real (insert (cider-font-lock-as-clojure real)))
-         ;; ((equal "true" (nrepl-dict-get real "mutated?"))
-         ;;  (insert (cider-font-lock-as-clojure (nrepl-dict-get real "value-str")))
-         ;;  (insert "\n")
-         ;;  (cider-insert
-         ;;   (format "      >> object may have been mutated later into %s <<"
-         ;;           (nrepl-dict-get real "value"))
-         ;;   'font-lock-type-face))
-         )))))
+  (let ((eval-p (cider-stateful-check--failing-case-eval-p failing-case))
+        (immutable-results-p (cider-stateful-check--failing-case-assume-immutable-results-p failing-case)))
+    (nrepl-dbind-response execution (result)
+      (nrepl-dbind-response result (evaluation real real-str real-mutated? real-mutated)
+        (cider-propertize-region
+            (list 'cider-stateful-check-result result
+                  'cider-value-idx result
+                  'mouse-face 'highlight)
+          (cond
+           ((and (not immutable-results-p) real-mutated)
+            (insert (cider-font-lock-as-clojure real-str))
+            (insert "\n")
+            (cider-insert
+             (format "      >> object may have been mutated later into %s <<"
+                     real-mutated)
+             'font-lock-type-face))
+           ((and real-mutated? real-str)
+            (insert (cider-font-lock-as-clojure real-str)))
+           ((and eval-p evaluation)
+            (insert (cider-font-lock-as-clojure evaluation)))
+           ((and eval-p real)
+            (insert (cider-propertize real 'font-lock-comment-face)))
+           (real (insert (cider-font-lock-as-clojure real)))))))))
 
 (defun cider-stateful-check--render-error-button (exception)
   "Render the EXCEPTION as a text button."
@@ -533,7 +543,7 @@
 
 (defun cider-stateful-check--render-execution-short (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE in short form."
-  (nrepl-dbind-response execution (arguments command failures handle)
+  (nrepl-dbind-response execution (arguments command failures)
     (cider-propertize-region (list 'cider-stateful-check-execution execution)
       (insert "    ")
       (cider-stateful-check--render-handle failing-case execution)
@@ -554,7 +564,7 @@
 
 (defun cider-stateful-check--render-execution-long (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE in long form."
-  (nrepl-dbind-response execution (arguments command failures handle)
+  (nrepl-dbind-response execution (arguments command failures)
     (cider-propertize-region (list 'cider-stateful-check-execution execution)
       (insert "    ")
       (cider-stateful-check--render-handle failing-case execution)
@@ -695,9 +705,10 @@
   "Insert the Stateful Check RUN into current buffer."
   (cider-propertize-region (list 'cider-stateful-check-run run)
     (unless (cider-stateful-check--run-pass-p run)
-      (cider-stateful-check--render-first run)
-      (insert "\n")
-      (cider-stateful-check--render-smallest run))))
+      (cider-stateful-check--render-smallest run)
+      (when cider-stateful-check-report-first-case-p
+        (insert "\n")
+        (cider-stateful-check--render-first run)))))
 
 (defun cider-stateful-check--render-run (buffer run)
   "Render the Stateful Check RUN into BUFFER."
@@ -1068,7 +1079,8 @@
     (cider-stateful-check:run-assume-immutable-results-p)
     (cider-stateful-check:run-max-tries)
     (cider-stateful-check:run-num-tests)
-    (cider-stateful-check:run-timeout-ms)]
+    (cider-stateful-check:run-timeout-ms)
+    (cider-stateful-check:run-seed)]
    ["Report Options"
     (cider-stateful-check:report-command-frequency-p)
     (cider-stateful-check:report-first-case-p)]]
