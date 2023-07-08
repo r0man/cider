@@ -527,19 +527,21 @@
 
 (defun cider-stateful-check--render-error (failing-case execution)
   "Render the EXECUTION error of a Stateful Check FAILING-CASE."
-  (when-let (error (nrepl-dict-get execution "error"))
+  (nrepl-dbind-response execution (error result)
     (nrepl-dbind-response error (evaluation real)
-      (let ((eval-p (cider-stateful-check--failing-case-eval-p failing-case)))
+      (let ((eval-p (cider-stateful-check--failing-case-eval-p failing-case))
+            (eval-result-p (nrepl-dict-contains result "evaluation")))
         (cider-propertize-region
             (list 'cider-stateful-check-error error
                   'cider-value-idx error
                   'mouse-face 'highlight)
           (cond ((and eval-p evaluation)
                  (cider-stateful-check--render-error-button evaluation))
-                ((and eval-p (not evaluation) real)
+                ((and eval-p (not eval-result-p) real)
                  (cider-stateful-check--render-error-button
                   (cider-propertize real 'font-lock-comment-face)))
-                (real (cider-stateful-check--render-error-button real))))))))
+                ((and (not eval-result-p) real)
+                 (cider-stateful-check--render-error-button real))))))))
 
 (defun cider-stateful-check--render-execution-short (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE in short form."
@@ -556,8 +558,8 @@
         (cider-stateful-check--render-argument argument))
       (insert (cider-propertize ")" 'paren-face)
               (cider-propertize " = " 'font-lock-comment-face))
-      (or (cider-stateful-check--render-result failing-case execution)
-          (cider-stateful-check--render-error failing-case execution))
+      (cider-stateful-check--render-result failing-case execution)
+      (cider-stateful-check--render-error failing-case execution)
       (insert "\n")
       (seq-doseq (failure failures)
         (cider-stateful-check--render-failure failing-case failure)))))
@@ -579,8 +581,8 @@
       (insert "\n      ")
       (cider-insert "=>" 'font-lock-comment-face)
       (insert " ")
-      (or (cider-stateful-check--render-result failing-case execution)
-          (cider-stateful-check--render-error failing-case execution))
+      (cider-stateful-check--render-result failing-case execution)
+      (cider-stateful-check--render-error failing-case execution)
       (insert "\n")
       (seq-doseq (failure failures)
         (cider-stateful-check--render-failure failing-case failure)))))
@@ -726,7 +728,8 @@
   (with-current-buffer cider-stateful-check-buffer
     (cider-stateful-check--render-run cider-stateful-check-buffer run)
     (cider-popup-buffer-display (current-buffer) cider-stateful-check-auto-select-buffer)
-    (goto-char (point-min))))
+    (goto-char (point-min))
+    (cider-stateful-check--next-thing 'cider-stateful-check-execution)))
 
 (defun cider-stateful-check--query-at-point ()
   "Return a NREPL dictionary describing the thing at point."
