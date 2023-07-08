@@ -456,6 +456,23 @@
           (seq-doseq (event events)
             (cider-stateful-check--render-failure-event failing-case event)))))))
 
+(defun cider-stateful-check--render-failures (failing-case failures)
+  "Render the evaluation FAILURES of the FAILING-CASE."
+  (nrepl-dbind-response failures (evaluation real)
+    (let ((eval-p (cider-stateful-check--failing-case-eval-p failing-case))
+          (start (point)))
+      (cond
+       ((and evaluation)
+        (seq-doseq (failure evaluation)
+          (cider-stateful-check--render-failure failing-case failure)))
+       ((and eval-p real)
+        (seq-doseq (failure real)
+          (cider-stateful-check--render-failure failing-case failure))
+        (add-text-properties start (point) (list 'face 'font-lock-comment-face)))
+       ((and (not eval-p) real)
+        (seq-doseq (failure real)
+          (cider-stateful-check--render-failure failing-case failure)))))))
+
 (defun cider-stateful-check--render-test (orig-fun &rest args)
   (let ((test (elt args 1)))
     (if-let (run (and (nrepl-dict-p test) (nrepl-dict-get test "stateful-check")))
@@ -561,8 +578,7 @@
       (cider-stateful-check--render-result failing-case execution)
       (cider-stateful-check--render-error failing-case execution)
       (insert "\n")
-      (seq-doseq (failure failures)
-        (cider-stateful-check--render-failure failing-case failure)))))
+      (cider-stateful-check--render-failures failing-case failures))))
 
 (defun cider-stateful-check--render-execution-long (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE in long form."
@@ -584,8 +600,7 @@
       (cider-stateful-check--render-result failing-case execution)
       (cider-stateful-check--render-error failing-case execution)
       (insert "\n")
-      (seq-doseq (failure failures)
-        (cider-stateful-check--render-failure failing-case failure)))))
+      (cider-stateful-check--render-failures failing-case failures))))
 
 (defun cider-stateful-check--render-execution (failing-case execution)
   "Render the Stateful Check EXECUTION of the FAILING-CASE."
