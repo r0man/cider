@@ -289,6 +289,12 @@
   "Return the thread name from `cider-stateful-check-thread-name-index' for INDEX."
   (char-to-string (elt cider-stateful-check-thread-name-index index)))
 
+(defun cider-stateful-check--run-id-at-point ()
+  "Return the Stateful Check test run id at point, or nil."
+  (when-let ((ns (get-text-property (point) 'ns))
+             (var (get-text-property (point) 'var)))
+    (format "%s/%s" ns var)))
+
 ;; Specification
 
 (defun cider-stateful-check--specification-id (specification)
@@ -363,7 +369,7 @@
 
 (defun cider-stateful-check--read-specification (specifications)
   "Read one of the Stateful Check SPECIFICATIONS, with completion."
-  (let ((id (cider-stateful-check--read-specification-id specifications) ))
+  (let ((id (cider-stateful-check--read-specification-id specifications)))
     (seq-find (lambda (specification)
                 (equal id (cider-stateful-check--specification-id specification)))
               specifications)))
@@ -805,9 +811,15 @@
            (error "No clickable part here")))))
 
 (defun cider-stateful-check--specifications ()
-  "Scan public vars and test reports and return the Stateful Check specifications."
+  "Scan loaded namespaces and test reports for Stateful Check specifications."
   (cider-sync-request:stateful-check-scan)
   (cider-sync-request:stateful-check-specifications))
+
+(defun cider-stateful-check--test-specifications ()
+  "Return the Stateful Check specifications from the CIDER test report."
+  (seq-filter (lambda (specification)
+                (equal "test" (nrepl-dict-get specification "type")))
+              (cider-stateful-check--specifications)))
 
 ;;;###autoload
 (transient-define-suffix cider-stateful-check-run (specification options)
@@ -944,6 +956,13 @@
   "Move point to the previous command execution, if one exists."
   (interactive)
   (cider-stateful-check--previous-thing 'cider-stateful-check-execution))
+
+(defun cider-stateful-check-show-test-report (id)
+  "Show the Stateful Check test report ID at point in the debugger."
+  (interactive (list (cider-stateful-check--run-id-at-point)))
+  (when id
+    (when-let (run (cider-sync-request:stateful-check-analyze-test id))
+      (cider-stateful--show-run run))))
 
 (defun cider-stateful-check--define-menu (keymap)
   "Define a Stateful Check menu for the KEYMAP."
@@ -1119,6 +1138,7 @@
    ("s" cider-stateful-check-scan)])
 
 (advice-add 'cider-test-render-assertion :around #'cider-stateful-check--render-test)
+(define-key cider-test-report-mode-map (kbd "D") #'cider-stateful-check-show-test-report)
 
 (provide 'cider-stateful-check)
 
