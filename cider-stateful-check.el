@@ -553,7 +553,7 @@
   (nrepl-dbind-response execution (error result)
     (nrepl-dbind-response error (evaluation real)
       (let ((eval-p (cider-stateful-check--failing-case-eval-p failing-case))
-            (eval-result-p (nrepl-dict-contains result "evaluation")))
+            (eval-result-p (and result (nrepl-dict-contains result "evaluation"))))
         (cider-propertize-region
             (list 'cider-stateful-check-error error
                   'cider-value-idx error
