@@ -479,20 +479,6 @@
         (seq-doseq (failure real)
           (cider-stateful-check--render-failure failing-case failure)))))))
 
-(defun cider-stateful-check--render-test (orig-fun &rest args)
-  (let ((test (elt args 1)))
-    (if-let (run (and (nrepl-dict-p test) (nrepl-dict-get test "stateful-check")))
-        (nrepl-dbind-response test (ns var type)
-          (cider-propertize-region (cider-intern-keys (cdr test))
-            (let ((run (cider-sync-request:stateful-check-analyze-test (format "%s/%s" ns var)))
-                  (type-face (cider-test-type-simple-face type)))
-              (cider-insert (capitalize type) type-face nil " in ")
-              (cider-insert var 'font-lock-function-name-face t)
-              (cider-stateful-check--insert-run run)
-              (cider-stateful-check--render-footer run)
-              (cider-stateful-check-test-report-mode))))
-      (apply orig-fun args))))
-
 (defun cider-stateful-check--show-error ()
   "Show the error at point in the stacktrace navigator."
   (when-let (query (cider-stateful-check--query-at-point))
@@ -508,8 +494,6 @@
                                                       #'cider-stacktrace-mode
                                                       'ancillary)
                                   (reverse causes)))))))))))
-
-
 
 (defun cider-stateful-check--failing-case-assume-immutable-results-p (failing-case)
   "Return non-nil if FAILING-CASE was run with the assume-immutable-results option."
@@ -742,6 +726,19 @@
       (cider-stateful-check--render-header run)
       (cider-stateful-check--insert-run run)
       (cider-stateful-check--render-footer run))))
+
+(defun cider-stateful-check--render-test-event (event)
+  "Render the CIDER test EVENT."
+  (when-let (run (nrepl-dict-get event "stateful-check"))
+    (nrepl-dbind-response event (ns var type)
+      (cider-propertize-region (cider-intern-keys (cdr event))
+        (let ((run (cider-sync-request:stateful-check-analyze-test (format "%s/%s" ns var)))
+              (type-face (cider-test-type-simple-face type)))
+          (cider-insert (capitalize type) type-face nil " in ")
+          (cider-insert var 'font-lock-function-name-face t)
+          (cider-stateful-check--insert-run run)
+          (cider-stateful-check--render-footer run)
+          (cider-stateful-check-test-report-mode))))))
 
 (defun cider-stateful--show-run (run)
   "Show the Stateful Check RUN in a popup buffer."
@@ -1035,6 +1032,18 @@
             (define-key map [backtab] #'cider-inspector-previous-inspectable-object)
             map))
 
+(defun cider-stateful-check--render-test-event-p (event)
+  "Return non-nil if the CIDER test EVENT should be rendered."
+  (and (nrepl-dict-p event)
+       (nrepl-dict-get-in event '("stateful-check" "result-data" "specification"))))
+
+(defun cider-stateful-check--cider-test-render-assertion (orig-fun &rest args)
+  "Advice around `cider-test-render-assertion' using ORIG-FUN and ARGS."
+  (let ((event (elt args 1)))
+    (if (cider-stateful-check--render-test-event-p event)
+        (cider-stateful-check--render-test-event event)
+      (apply orig-fun args))))
+
 ;; Transient
 
 (transient-define-infix cider-stateful-check:gen-max-length ()
@@ -1137,7 +1146,7 @@
    ("r" cider-stateful-check-run)
    ("s" cider-stateful-check-scan)])
 
-(advice-add 'cider-test-render-assertion :around #'cider-stateful-check--render-test)
+(advice-add 'cider-test-render-assertion :around #'cider-stateful-check--cider-test-render-assertion)
 (define-key cider-test-report-mode-map (kbd "D") #'cider-stateful-check-show-test-report)
 
 (provide 'cider-stateful-check)
