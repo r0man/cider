@@ -67,6 +67,13 @@
   :safe #'booleanp
   :type 'boolean)
 
+(defcustom cider-stateful-check-render-options t
+  "Whether to render options in the debugger buffer."
+  :group 'cider-stateful-check
+  :package-version '(cider . "0.27.0")
+  :safe #'booleanp
+  :type 'boolean)
+
 (defcustom cider-stateful-check-thread-name-index "abcdefghijklmnopqrstuvwxzy"
   "The index used to pick thread names."
   :group 'cider-stateful-check
@@ -657,21 +664,60 @@
       (cider-insert "\n-----------------------------\n")
       (cider-stateful-check--render-executions failing-case executions))))
 
+(defun cider-stateful-check--render-generation-options (options)
+  "Render the Stateful Check generation OPTIONS."
+  (nrepl-dbind-response options (max-length max-size threads)
+    (cider-insert "  Generation: " 'bold t)
+    (insert (format "    Max Length ......... %s\n" max-length))
+    (insert (format "    Max Size ........... %s\n" max-size))
+    (insert (format "    Threads ............ %s\n" threads))))
+
+(defun cider-stateful-check--render-run-options (options)
+  "Render the Stateful Check run OPTIONS."
+  (nrepl-dbind-response options (assume-immutable-results max-tries num-tests seed timeout-ms)
+    (cider-insert "  Run: " 'bold t)
+    (insert (format "    Immutable Results .. %s\n" assume-immutable-results))
+    (insert (format "    Max Tries .......... %s\n" max-tries))
+    (insert (format "    Num Tests .......... %s\n" num-tests))
+    (insert (format "    Seed ............... %s\n" seed))
+    (insert (format "    Timeout (ms) ....... %s\n" timeout-ms))))
+
+(defun cider-stateful-check--render-report-options (options)
+  "Render the Stateful Check report OPTIONS."
+  (nrepl-dbind-response options (command-frequency? first-case?)
+    (cider-insert "  Report: " 'bold t)
+    (insert (format "    Command Frequency .. %s\n" command-frequency?))
+    (insert (format "    First Case ......... %s\n" first-case?))))
+
+(defun cider-stateful-check--render-options (options)
+  "Render the Stateful Check OPTIONS."
+  (nrepl-dbind-response options (gen report run)
+    (cider-propertize-region (list 'cider-stateful-check-options options)
+      (cider-insert "Options: " 'bold t)
+      (cider-stateful-check--render-generation-options gen)
+      (cider-stateful-check--render-run-options run)
+      (cider-stateful-check--render-report-options report)
+      (insert "\n"))))
+
 (defun cider-stateful-check--render-footer (run)
   "Render the Stateful Check RUN footer."
-  (cider-propertize-region (list 'cider-stateful-check-footer run)
-    (when-let (seed (nrepl-dict-get-in run '("seed")))
+  (nrepl-dbind-response run (options)
+    (cider-propertize-region (list 'cider-stateful-check-footer run)
+      (unless cider-stateful-check-render-options
+        (when-let (seed (nrepl-dict-get-in run '("seed")))
+          (insert "\n")
+          (cider-insert "Seed: " 'bold)
+          (insert (format "%s\n"seed))))
+      (unless (zerop (length (nrepl-dict-get-in run'("result-data" "executions" "parallel"))))
+        (insert "\n")
+        (cider-insert "Note: " 'bold)
+        (cider-insert "Test cases with multiple threads are not deterministic, so using the\n"
+                      'font-lock-comment-face)
+        (cider-insert "      same seed does not guarantee the same result.\n"
+                      'font-lock-comment-face))
       (insert "\n")
-      (cider-insert "Seed: " 'bold)
-      (insert (format "%s\n"seed)))
-    (unless (zerop (length (nrepl-dict-get-in run'("result-data" "executions" "parallel"))))
-      (insert "\n")
-      (cider-insert "Note: " 'bold)
-      (cider-insert "Test cases with multiple threads are not deterministic, so using the\n"
-                    'font-lock-comment-face)
-      (cider-insert "      same seed does not guarantee the same result.\n"
-                    'font-lock-comment-face))
-    (insert "\n")))
+      (when cider-stateful-check-render-options
+        (cider-stateful-check--render-options options)))))
 
 (defun cider-stateful-check--success-message (run)
   "Return the Stateful Check success message for RUN."
@@ -926,6 +972,15 @@
           (not cider-stateful-check-report-first-case-p))
     (cider-stateful-check--run-replace run)))
 
+;;;###autoload
+(defun cider-stateful-check-toggle-render-options ()
+  "Toggle the display of the render options."
+  (interactive)
+  (when-let (run cider-stateful-check--current-run)
+    (setq cider-stateful-check-render-options
+          (not cider-stateful-check-render-options))
+    (cider-stateful-check--run-replace run)))
+
 (defun cider-stateful-check--next-thing (thing)
   "Move point to the next THING, a text property symbol, if one exists."
   (interactive)
@@ -980,17 +1035,19 @@
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map cider-popup-buffer-mode-map)
     (cider-stateful-check--define-menu map)
-    (define-key map "t" #'cider-stateful-check-toggle-first-case)
     (define-key map "P" #'cider-stateful-check-print-value-at-point)
     (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
-    (define-key map "g" #'cider-stateful-check-rerun)
     (define-key map "b" #'backward-char)
     (define-key map "d" #'cider-test-ediff)
     (define-key map "e" #'cider-stateful-check-eval-step)
-    (define-key map "k" #'cider-stateful-check-eval-stop)
     (define-key map "f" #'forward-char)
+    (define-key map "g" #'cider-stateful-check-rerun)
+    (define-key map "k" #'cider-stateful-check-eval-stop)
     (define-key map "n" #'cider-stateful-check-next-execution)
+    (define-key map "o" #'cider-stateful-check-toggle-render-options)
     (define-key map "p" #'cider-stateful-check-previous-execution)
+    (define-key map "t" #'cider-stateful-check-toggle-first-case)
+    (define-key map "x" #'cider-stateful-check)
     (define-key map (kbd "C-c C-z") #'cider-switch-to-repl-buffer)
     (define-key map (kbd "RET") #'cider-stateful-check-operate-on-point)
     (define-key map [(shift tab)] #'cider-inspector-previous-inspectable-object)
@@ -1013,7 +1070,6 @@
   :keymap (let ((map (make-sparse-keymap)))
             (set-keymap-parent map cider-popup-buffer-mode-map)
             (cider-stateful-check--define-menu map)
-            (define-key map "t" #'cider-stateful-check-toggle-first-case)
             (define-key map "P" #'cider-stateful-check-print-value-at-point)
             (define-key map "\C-i" #'cider-inspector-next-inspectable-object)
             (define-key map "b" #'backward-char)
@@ -1022,7 +1078,9 @@
             (define-key map "f" #'forward-char)
             (define-key map "k" #'cider-stateful-check-eval-stop)
             (define-key map "n" #'cider-stateful-check-next-execution)
+            (define-key map "o" #'cider-stateful-check-toggle-render-options)
             (define-key map "p" #'cider-stateful-check-previous-execution)
+            (define-key map "t" #'cider-stateful-check-toggle-first-case)
             (define-key map (kbd "C-c C-z") #'cider-switch-to-repl-buffer)
             (define-key map (kbd "RET") #'cider-stateful-check-operate-on-point)
             (define-key map [(shift tab)] #'cider-inspector-previous-inspectable-object)
