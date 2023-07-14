@@ -739,7 +739,7 @@
 
 (defun cider-stateful-check--render-header (run)
   "Render the Stateful Check header for RUN."
-  (cider-insert "Stateful Check Summary" 'bold t)
+  (cider-insert "Stateful Check Debugger" 'bold t)
   (when-let ((ns (cider-stateful-check--run-ns run))
              (var (cider-stateful-check--run-var run)))
     (insert (cider-propertize ns 'ns))
@@ -901,7 +901,7 @@
 ;;;###autoload
 (transient-define-suffix cider-stateful-check-rerun (options)
   "Rerun the Stateful Check specification with OPTIONS."
-  :description "Rerun specification"
+  :description "Re-run specification"
   (interactive (list (cider-stateful-check--rerun-options)))
   (if (get-buffer cider-stateful-check-buffer)
       (with-current-buffer cider-stateful-check-buffer
@@ -913,7 +913,7 @@
 ;;;###autoload
 (transient-define-suffix cider-stateful-check-scan ()
   "Scan all public vars and test runs for Stateful Check specifications."
-  :description "Scan vars and test reports for specifications"
+  :description "Scan specifications"
   (interactive)
   (let ((old-specs (cider-sync-request:stateful-check-specifications))
         (new-specs (cider-sync-request:stateful-check-scan)))
@@ -922,8 +922,9 @@
              (cider-propertize (number-to-string (length new-specs)) 'bold))))
 
 ;;;###autoload
-(defun cider-stateful-check-eval-step ()
+(transient-define-suffix cider-stateful-check-eval-step ()
   "Evaluate the command of a Stateful Check run."
+  :description "Evaluate command"
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
@@ -943,8 +944,9 @@
                     (message "Failed to evaluate Stateful Check command."))))))))))
 
 ;;;###autoload
-(defun cider-stateful-check-eval-stop ()
+(transient-define-suffix cider-stateful-check-eval-stop ()
   "Stop the evaluation of a Stateful Check run."
+  :description "Stop evaluation"
   (interactive)
   (when-let (query (cider-stateful-check--query-at-point))
     (nrepl-dbind-response query (run case)
@@ -1184,9 +1186,17 @@
   :transient t
   :variable 'cider-stateful-check-report-command-frequency-p)
 
+(transient-define-infix cider-stateful-check:report-render-options ()
+  "The transient option to set `cider-stateful-check-report-command-frequency`."
+  :class 'transient-lisp-variable
+  :description "Render options"
+  :key "-o"
+  :transient t
+  :variable 'cider-stateful-check-render-options)
+
 (transient-define-prefix cider-stateful-check ()
   "A transient menu to set the Stateful Check specification run options."
-  [["Stateful Check\n\nGeneration Options"
+  [["Stateful Check Debugger\n\nGeneration Options"
     (cider-stateful-check:gen-max-length)
     (cider-stateful-check:gen-max-size)
     (cider-stateful-check:gen-threads)]
@@ -1198,11 +1208,15 @@
     (cider-stateful-check:run-seed)]
    ["Report Options"
     (cider-stateful-check:report-command-frequency-p)
-    (cider-stateful-check:report-first-case-p)]]
-  ["Actions"
-   ("g" cider-stateful-check-rerun)
-   ("r" cider-stateful-check-run)
-   ("s" cider-stateful-check-scan)])
+    (cider-stateful-check:report-first-case-p)
+    (cider-stateful-check:report-render-options)]]
+  [["Specification Actions"
+    ("g" cider-stateful-check-rerun)
+    ("r" cider-stateful-check-run)
+    ("s" cider-stateful-check-scan)]
+   ["Eval Actions"
+    ("e" cider-stateful-check-eval-step)
+    ("S" cider-stateful-check-eval-stop)]])
 
 (advice-add 'cider-test-render-assertion :around #'cider-stateful-check--cider-test-render-assertion)
 (define-key cider-test-report-mode-map (kbd "D") #'cider-stateful-check-show-test-report)
