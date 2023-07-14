@@ -1117,7 +1117,7 @@
 (transient-define-infix cider-stateful-check:gen-max-size ()
   "The transient option to set `cider-stateful-check-gen-max-size`."
   :class 'transient-lisp-variable
-  :description "Max. size for generated values"
+  :description "Max size for generated values"
   :key "-s"
   :transient t
   :variable 'cider-stateful-check-gen-max-size)
