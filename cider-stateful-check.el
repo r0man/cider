@@ -347,12 +347,6 @@
   "Return the namespace of the RUN."
   (nrepl-dict-get-in run '("specification" "var")))
 
-(defun cider-stateful-check--run-name (run)
-  "Return the namespace of the RUN."
-  (when-let ((ns (cider-stateful-check--run-ns run))
-             (var (cider-stateful-check--run-var run)))
-    (format "%s/%s" ns var)))
-
 (defun cider-stateful-check--run-first-case (run)
   "Return the first failing case from the Stateful Check RUN."
   (nrepl-dict-get-in run '("result-data")))
@@ -361,18 +355,15 @@
   "Return the smallest failing case from the Stateful Check RUN."
   (nrepl-dict-get-in run '("shrunk" "result-data")))
 
-(defun cider-stateful-check--run-sort (runs)
-  "Sort the Stateful Check RUNS by namespace and var."
-  (seq-sort-by (lambda (run)
-                 (format "%s/%s"
-                         (nrepl-dict-get run "ns")
-                         (nrepl-dict-get run "var")))
-               #'string< runs))
+(defun cider-stateful-check--run-sort (specifications)
+  "Sort the Stateful Check SPECIFICATIONS by their id slot."
+  (seq-sort-by #'cider-stateful-check--specification-id #'string< specifications))
 
 (defun cider-stateful-check--read-specification-id (specifications)
   "Read one of the Stateful Check specification name from SPECIFICATIONS, with completion."
   (completing-read "Stateful Check Specification: "
-                   (seq-map #'cider-stateful-check--specification-id specifications)))
+                   (seq-map #'cider-stateful-check--specification-id
+                            (cider-stateful-check--run-sort specifications))))
 
 (defun cider-stateful-check--read-specification (specifications)
   "Read one of the Stateful Check SPECIFICATIONS, with completion."
