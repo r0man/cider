@@ -108,6 +108,46 @@
     :type (or null string)))
   "A class representing a Datomic client.")
 
+;; Schema
+
+(defclass cider-datomic-schema ()
+  ((attributes
+    :accessor cider-datomic-schema-attributes
+    :documentation "The attributes of the schema."
+    :initarg :attributes)
+   (namespaces
+    :accessor cider-datomic-schema-namespaces
+    :documentation "The namespaces of the schema."
+    :initarg :namespaces)))
+
+(defun cider-datomic-schema--result-to-attribute (result)
+  "Convert the a Datomic query RESULT into a schema."
+  (seq-let [ident type cardinality doc unique] result
+    (datomic-attribute :cardinality cardinality
+                       :doc doc
+                       :ident ident
+                       :type type
+                       :unique (when (hash-table-p unique)
+                                 (ht-get* unique :db/unique :db/ident)))))
+
+(defun cider-datomic-schema--results-to-schema (results)
+  "Convert the a Datomic query RESULTS into a schema."
+  (let ((attributes (seq-map #'cider-datomic-schema--result-to-attribute (car results))))
+    (cider-datomic-schema :attributes attributes)))
+
+(defvar cider-datomic-schema--load-query
+  (vector :find '\?ident '\?type '\?cardinality '\?doc
+          `(pull \?a ,(vector (ht (:db/unique [:db/ident]))))
+          :where
+          [_ :db.install/attribute \?a]
+          [\?a :db/valueType \?t]
+          [\?a :db/cardinality \?c]
+          [\?a :db/ident \?ident]
+          [\?t :db/ident \?type]
+          [\?c :db/ident \?cardinality]
+          [\?ident :db/doc \?doc])
+  "The Datomic query to load the schema.")
+
 ;; NREPL
 
 (defun cider-request:datomic-create-database (client db-name &optional callback)
