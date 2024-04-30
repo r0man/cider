@@ -184,6 +184,17 @@
                                            (parseedn-print-str query)))
                 (cider-nrepl-send-request callback)))
 
+(defun cider-request:datomic-transact (client db-name tx-data &optional callback)
+  "Submit TX-DATA to DB-NAME using CLIENT and invoke CALLBACK."
+  (cider-ensure-op-supported "cider.datomic/transact")
+  (thread-first `("op" "cider.datomic/transact"
+                  "cider.datomic/client" ,(cider-datomic-client-transform-value client)
+                  "cider.datomic/db-name" ,db-name
+                  "cider.datomic/transact" ,(if (stringp tx-data)
+                                                tx-data
+                                              (parseedn-print-str tx-data)))
+                (cider-nrepl-send-request callback)))
+
 (defun cider-datomic-client-apply ()
   (interactive))
 
