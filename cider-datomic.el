@@ -151,18 +151,37 @@
 ;; NREPL
 
 (defun cider-request:datomic-create-database (client db-name &optional callback)
-  "Add CONSUMER to the APPENDER of FRAMEWORK and call CALLBACK on log events."
+  "Create the Datomic database DB-NAME using CLIENT and invoke CALLBACK."
   (cider-ensure-op-supported "cider.datomic/create-databases")
   (thread-first `("op" "cider.datomic/list-databases"
                   "cider.datomic/client" ,(cider-datomic-client-transform-value client)
                   "cider.datomic/db-name" ,db-name)
                 (cider-nrepl-send-request callback)))
 
+(defun cider-request:datomic-delete-database (client db-name &optional callback)
+  "Delete the Datomic database DB-NAME using CLIENT and invoke CALLBACK."
+  (cider-ensure-op-supported "cider.datomic/delete-databases")
+  (thread-first `("op" "cider.datomic/list-databases"
+                  "cider.datomic/client" ,(cider-datomic-client-transform-value client)
+                  "cider.datomic/db-name" ,db-name)
+                (cider-nrepl-send-request callback)))
+
 (defun cider-request:datomic-list-databases (client &optional callback)
-  "Add CONSUMER to the APPENDER of FRAMEWORK and call CALLBACK on log events."
+  "List the Datomic database using CLIENT and invoke CALLBACK."
   (cider-ensure-op-supported "cider.datomic/list-databases")
   (thread-first `("op" "cider.datomic/list-databases"
                   "cider.datomic/client" ,(cider-datomic-client-transform-value client))
+                (cider-nrepl-send-request callback)))
+
+(defun cider-request:datomic-query (client db-name query &optional callback)
+  "Evaluate the Datomic QUERY with DB-NAME using CLIENT and invoke CALLBACK."
+  (cider-ensure-op-supported "cider.datomic/query")
+  (thread-first `("op" "cider.datomic/query"
+                  "cider.datomic/client" ,(cider-datomic-client-transform-value client)
+                  "cider.datomic/db-name" ,db-name
+                  "cider.datomic/query" ,(if (stringp query)
+                                             query
+                                           (parseedn-print-str query)))
                 (cider-nrepl-send-request callback)))
 
 (defun cider-datomic-client-apply ()
