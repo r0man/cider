@@ -50,7 +50,7 @@
   :safe #'stringp
   :type 'string)
 
-(defcustom cider-datomic-client-system nil
+(defcustom cider-datomic-client-system "default"
   "The Datomic client system."
   :group 'cider-datomic
   :package-version '(cider . "1.13.2")
@@ -302,8 +302,31 @@
                             (message "Database %s deleted."
                                      (propertize name 'face 'bold)))))))))
 
+(defun cider-datomic-read-client-storage-directory ()
+  "Read the storage directory of a Datomic client."
+  (read-string "Storage directory: " cider-datomic-client-storage-dir
+               'cider-datomic-client-storage-directory-history))
+
+(defun cider-datomic-read-client-server-type ()
+  "Read the server type of a Datomic client."
+  (completing-read "Server type: " cider-datomic-client-server-types nil t
+                   cider-datomic-client-server-type
+                   'cider-datomic-client-server-type-history))
+
+(defun cider-datomic-read-client-system ()
+  "Read the system of a Datomic client."
+  (read-string "System: " cider-datomic-client-system
+               'cider-datomic-client-system-history))
+
+(defun cider-datomic-read-client ()
+  "Read a Datomic client."
+  (cider-datomic-client
+   :server-type (cider-datomic-read-client-server-type)
+   :storage-dir (cider-datomic-read-client-storage-directory)
+   :system (cider-datomic-read-client-system)))
+
 (defun cider-datomic-read-database (client)
-  "Delete the database NAME using CLIENT."
+  "Read a Datomic database with CLIENT."
   (let ((databases (cider-sync-request:datomic-list-databases client)))
     (completing-read "Database name: " databases)))
 
@@ -329,10 +352,17 @@
     (setq cider-datomic-client--current client)
     (cider-datomic-list-databases client)))
 
+(defun cider-datomic-create-client ()
+  "Create a new Datomic client."
+  (interactive)
+  (push (cider-datomic-read-client) cider-datomic-clients)
+  (cider-datomic-list-clients))
+
 (defvar cider-datomic-clients-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
-    (define-key map (kbd "RET") 'cider-datomic-client-enter)
+    (define-key map (kbd "RET") #'cider-datomic-client-enter)
+    (define-key map (kbd "c") 'cider-datomic-create-client)
     (define-key map (kbd "g") 'cider-datomic-list-clients)
     map)
   "The Cider Datomic clients mode key map.")
@@ -346,7 +376,7 @@
 (defun cider-datomic-list-clients ()
   "List Datomic clients."
   (interactive)
-  (pop-to-buffer "*Datomic Clients*" nil)
+  (pop-to-buffer-same-window "*Datomic Clients*")
   (cider-datomic-clients-mode)
   (setq tabulated-list-entries
         (seq-map #'cider-datomic-client-tabulated-list-entry
