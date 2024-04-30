@@ -212,15 +212,15 @@
 (defun cider-request:datomic-create-database (client db-name &optional callback)
   "Create the Datomic database DB-NAME using CLIENT and invoke CALLBACK."
   (cider-ensure-op-supported "cider.datomic/create-database")
-  (thread-first `("op" "cider.datomic/list-database"
+  (thread-first `("op" "cider.datomic/create-database"
                   "cider.datomic/client" ,(cider-datomic-client-transform-value client)
                   "cider.datomic/db-name" ,db-name)
                 (cider-nrepl-send-request callback)))
 
 (defun cider-request:datomic-delete-database (client db-name &optional callback)
   "Delete the Datomic database DB-NAME using CLIENT and invoke CALLBACK."
-  (cider-ensure-op-supported "cider.datomic/delete-databases")
-  (thread-first `("op" "cider.datomic/list-databases"
+  (cider-ensure-op-supported "cider.datomic/delete-database")
+  (thread-first `("op" "cider.datomic/delete-database"
                   "cider.datomic/client" ,(cider-datomic-client-transform-value client)
                   "cider.datomic/db-name" ,db-name)
                 (cider-nrepl-send-request callback)))
@@ -259,55 +259,39 @@
   (cider-ensure-op-supported "cider.datomic/list-databases")
   (thread-first `("op" "cider.datomic/list-databases"
                   "cider.datomic/client" ,(cider-datomic-client-transform-value client))
-                (cider-nrepl-send-sync-request)))
+                (cider-nrepl-send-sync-request)
+                (nrepl-dict-get "cider.datomic/list-databases")))
 
-(defun cider-datomic-client-apply ()
-  (interactive))
-
-(defun cider-datomic-current-client ()
+(defun cider-datomic-client-current ()
+  "Return the current Datomic client."
   (cider-datomic-client))
 
-(defun cider-datomic--create-database (client name)
+(defun cider-datomic-create-database (client name)
   "Create a database for CLIENT with NAME."
-  (interactive (list (cider-datomic-current-client)
-                     (read-string "Database name: ")))
+  (interactive (list (cider-datomic-client-current) nil))
+  (unless name (setq name (cider-datomic-read-database client)))
   (cider-request:datomic-create-database
    client name (lambda (response)
                  (nrepl-dbind-response response (status)
                    (cond ((member "done" status)
+                          (cider-datomic-list-databases client)
                           (message "Database created.")))))))
 
 (defun cider-datomic-delete-database (client name)
   "Delete the database NAME using CLIENT."
-  (interactive (list (cider-datomic-current-client)
-                     (read-string "Database name: ")))
+  (interactive (list (cider-datomic-client-current) nil))
+  (unless name (setq name (cider-datomic-read-database client)))
   (cider-request:datomic-delete-database
    client name (lambda (response)
                  (nrepl-dbind-response response (status)
                    (cond ((member "done" status)
+                          (cider-datomic-list-databases client)
                           (message "Database deleted.")))))))
 
 (defun cider-datomic-read-database (client)
   "Delete the database NAME using CLIENT."
-  (cider-sync-request:datomic-list-databases client))
-
-(defun cider-datomic--list-databases-handler (client)
-  "List databases for CLIENT."
-  (lambda (response)
-    (nrepl-dbind-response response (status)
-      (cond ((member "done" status)
-             (pop-to-buffer "*Cider Datomic Databases*" nil)
-             (cider-datomic-databases-mode)
-             (setq tabulated-list-entries
-                   (seq-map (lambda (entry)
-                              (with-slots (server-type storage-dir) client
-                                (list (format "%s" entry)
-                                      (vector
-                                       (format "%s" entry)
-                                       (format "%s" server-type)
-                                       (format "%s" storage-dir)))))
-                            (nrepl-dict-get response "cider.datomic/list-databases")))
-             (tabulated-list-print t))))))
+  (let ((databases (cider-sync-request:datomic-list-databases client)))
+    (completing-read "Database name: " databases)))
 
 ;; List clients
 
@@ -323,6 +307,13 @@
     (list client (vector (format "%s" system)
                          (format "%s" server-type)
                          (format "%s" storage-dir)))))
+
+(defvar cider-datomic-clients-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "g") 'cider-datomic-list-clients)
+    map)
+  "The Cider Datomic clients mode key map.")
 
 (define-derived-mode cider-datomic-clients-mode
   tabulated-list-mode "Datomic Clients" "Major mode to list Datomic clients."
@@ -344,9 +335,25 @@
 
 (defvar cider-datomic-database-tabulated-list-format
   [("Name" 12 t)
+   ("System" 12 t)
    ("Server Type" 16 t)
    ("Storage Directory" 20 nil)]
   "The tabulated list format of a Datomic database.")
+
+(defun cider-datomic-database-tabulated-list-entry (client database)
+  "Return a tabulated list entry for CLIENT and DATABASE."
+  (with-slots (server-type storage-dir system) client
+    (list database (vector (format "%s" database)
+                           (format "%s" system)
+                           (format "%s" server-type)
+                           (format "%s" storage-dir)))))
+
+(defvar cider-datomic-databases-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "g") 'cider-datomic-list-databases)
+    map)
+  "The Cider Datomic databases mode key map.")
 
 (define-derived-mode cider-datomic-databases-mode
   tabulated-list-mode "Datomic Databases" "Major mode to list Datomic databases."
@@ -356,8 +363,18 @@
 
 (defun cider-datomic-list-databases (client)
   "List databases for CLIENT."
-  (interactive (list (cider-datomic-current-client)))
-  (cider-request:datomic-list-databases client (cider-datomic--list-databases-handler client)))
+  (interactive (list (cider-datomic-client-current)))
+  (cider-request:datomic-list-databases
+   client (lambda (response)
+            (nrepl-dbind-response response (status)
+              (cond ((member "done" status)
+                     (pop-to-buffer "*Datomic Databases*" nil)
+                     (cider-datomic-databases-mode)
+                     (setq tabulated-list-entries
+                           (seq-map (lambda (database)
+                                      (cider-datomic-database-tabulated-list-entry client database))
+                                    (nrepl-dict-get response "cider.datomic/list-databases")))
+                     (tabulated-list-print t)))))))
 
 ;; Transient
 
@@ -409,8 +426,8 @@
   :description "Database Validate Hostnames"
   :key "=v")
 
-;;;###autoload (autoload 'cider-datomic-client "cider-datomic" "Manage the Datomic client." t)
-(transient-define-prefix cider-datomic-client-menu ()
+;;;###autoload (autoload 'cider-datomic "cider-datomic" "Manage the Datomic client." t)
+(transient-define-prefix cider-datomic ()
   "Show the Cider log event menu."
   :history-key 'cider-datomic-client
   ["Cider Datomic\n\nClient:"
@@ -422,7 +439,7 @@
    (cider-datomic--client-access-key-option)
    (cider-datomic--client-validate-hostnames-option)]
   ["Actions"
-   ("c" "Create database" cider-datomic--create-database)
+   ("n" "Create new database" cider-datomic-create-database)
    ("k" "Delete database" cider-datomic-delete-database)
    ("c" "List clients" cider-datomic-list-clients)
    ("l" "List databases" cider-datomic-list-databases)])
@@ -477,11 +494,11 @@ the CIDER Inspector and the CIDER stacktrace mode.
 ;;; cider-datomic.el ends here
 
 ;; (cider-request:datomic-query
-;;  (cider-datomic-current-client)
+;;  (cider-datomic-client-current)
 ;;  "foo" cider-datomic-schema--load-query
 ;;  (lambda (result)
 ;;    (setq my-result result)))
 
-;; (cider-sync-request:datomic-list-databases (cider-datomic-current-client))
+;; (cider-sync-request:datomic-list-databases (cider-datomic-client-current))
 
-;; (cider-datomic-read-database (cider-datomic-current-client))
+;; (cider-datomic-read-database (cider-datomic-client-current))
