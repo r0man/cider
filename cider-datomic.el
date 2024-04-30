@@ -85,6 +85,10 @@
   :safe #'stringp
   :type 'string)
 
+(defvar cider-datomic-clients
+  (list (cider-datomic-client))
+  "The list of Datomic clients.")
+
 (defvar cider-datomic-client-server-types
   '("cloud" "datomic-local" "peer-server")
   "The list of Datomic query content types.")
@@ -263,7 +267,7 @@
 (defun cider-datomic-current-client ()
   (cider-datomic-client))
 
-(defun cider-datomic--do-create-database (client name)
+(defun cider-datomic--create-database (client name)
   "Create a database for CLIENT with NAME."
   (interactive (list (cider-datomic-current-client)
                      (read-string "Database name: ")))
@@ -287,15 +291,6 @@
   "Delete the database NAME using CLIENT."
   (cider-sync-request:datomic-list-databases client))
 
-(define-derived-mode cider-datomic-databases-mode tabulated-list-mode "Cider Datomic Databases" "Major mode to list Datomic databases"
-  (setq tabulated-list-format [("Name" 12 t)
-                               ("Server Type" 16 t)
-                               ("Storage Directory" 20 nil)])
-  (setq tabulated-list-padding 2)
-  ;; (setq tabulated-list-sort-key (cons "Date" t))
-  ;; (use-local-map blog-mode-map)
-  (tabulated-list-init-header))
-
 (defun cider-datomic--list-databases-handler (client)
   "List databases for CLIENT."
   (lambda (response)
@@ -313,6 +308,51 @@
                                        (format "%s" storage-dir)))))
                             (nrepl-dict-get response "cider.datomic/list-databases")))
              (tabulated-list-print t))))))
+
+;; List clients
+
+(defvar cider-datomic-client-tabulated-list-format
+  [("System" 12 t)
+   ("Server Type" 16 t)
+   ("Storage Directory" 20 nil)]
+  "The tabulated list format of a Datomic client.")
+
+(defun cider-datomic-client-tabulated-list-entry (client)
+  "Return a tabulated list entry for CLIENT."
+  (with-slots (server-type storage-dir system) client
+    (list client (vector (format "%s" system)
+                         (format "%s" server-type)
+                         (format "%s" storage-dir)))))
+
+(define-derived-mode cider-datomic-clients-mode
+  tabulated-list-mode "Datomic Clients" "Major mode to list Datomic clients."
+  (setq tabulated-list-format cider-datomic-client-tabulated-list-format)
+  (setq tabulated-list-padding 2)
+  (tabulated-list-init-header))
+
+(defun cider-datomic-list-clients ()
+  "List Datomic clients."
+  (interactive)
+  (pop-to-buffer "*Datomic Clients*" nil)
+  (cider-datomic-clients-mode)
+  (setq tabulated-list-entries
+        (seq-map #'cider-datomic-client-tabulated-list-entry
+                 cider-datomic-clients))
+  (tabulated-list-print t))
+
+;; List databases
+
+(defvar cider-datomic-database-tabulated-list-format
+  [("Name" 12 t)
+   ("Server Type" 16 t)
+   ("Storage Directory" 20 nil)]
+  "The tabulated list format of a Datomic database.")
+
+(define-derived-mode cider-datomic-databases-mode
+  tabulated-list-mode "Datomic Databases" "Major mode to list Datomic databases."
+  (setq tabulated-list-format cider-datomic-database-tabulated-list-format)
+  (setq tabulated-list-padding 2)
+  (tabulated-list-init-header))
 
 (defun cider-datomic-list-databases (client)
   "List databases for CLIENT."
@@ -382,8 +422,9 @@
    (cider-datomic--client-access-key-option)
    (cider-datomic--client-validate-hostnames-option)]
   ["Actions"
-   ("c" "Create database" cider-datomic--do-create-database)
-   ("k" "Delete database" cider-datomic--do-delete-database)
+   ("c" "Create database" cider-datomic--create-database)
+   ("k" "Delete database" cider-datomic-delete-database)
+   ("c" "List clients" cider-datomic-list-clients)
    ("l" "List databases" cider-datomic-list-databases)])
 
 ;; Major mode
