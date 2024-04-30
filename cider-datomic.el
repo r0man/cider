@@ -262,9 +262,19 @@
                 (cider-nrepl-send-sync-request)
                 (nrepl-dict-get "cider.datomic/list-databases")))
 
+(defvar cider-datomic-client--current
+  (cider-datomic-client)
+  "The current Datomic client.")
+
 (defun cider-datomic-client-current ()
   "Return the current Datomic client."
-  (cider-datomic-client))
+  cider-datomic-client--current)
+
+(defun cider-datomic--database-under-point ()
+  "Return the Datomic database under point."
+  (let ((entry (tabulated-list-get-id)))
+    (when (stringp entry)
+      entry)))
 
 (defun cider-datomic-create-database (client name)
   "Create a database for CLIENT with NAME."
@@ -275,18 +285,22 @@
                  (nrepl-dbind-response response (status)
                    (cond ((member "done" status)
                           (cider-datomic-list-databases client)
-                          (message "Database created.")))))))
+                          (message "Database %s created."
+                                   (propertize name 'face 'bold))))))))
 
 (defun cider-datomic-delete-database (client name)
   "Delete the database NAME using CLIENT."
-  (interactive (list (cider-datomic-client-current) nil))
+  (interactive (list (cider-datomic-client-current)
+                     (cider-datomic--database-under-point)))
   (unless name (setq name (cider-datomic-read-database client)))
-  (cider-request:datomic-delete-database
-   client name (lambda (response)
-                 (nrepl-dbind-response response (status)
-                   (cond ((member "done" status)
-                          (cider-datomic-list-databases client)
-                          (message "Database deleted.")))))))
+  (when (yes-or-no-p (format "Delete database %s? " name))
+    (cider-request:datomic-delete-database
+     client name (lambda (response)
+                   (nrepl-dbind-response response (status)
+                     (cond ((member "done" status)
+                            (cider-datomic-list-databases client)
+                            (message "Database %s deleted."
+                                     (propertize name 'face 'bold)))))))))
 
 (defun cider-datomic-read-database (client)
   "Delete the database NAME using CLIENT."
@@ -308,9 +322,17 @@
                          (format "%s" server-type)
                          (format "%s" storage-dir)))))
 
+(defun cider-datomic-client-enter ()
+  "List the databases of the seletcted Datomic client."
+  (interactive)
+  (let ((client (tabulated-list-get-id)))
+    (setq cider-datomic-client--current client)
+    (cider-datomic-list-databases client)))
+
 (defvar cider-datomic-clients-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "RET") 'cider-datomic-client-enter)
     (define-key map (kbd "g") 'cider-datomic-list-clients)
     map)
   "The Cider Datomic clients mode key map.")
@@ -351,7 +373,10 @@
 (defvar cider-datomic-databases-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "c") 'cider-datomic-create-database)
+    (define-key map (kbd "d") 'cider-datomic-delete-database)
     (define-key map (kbd "g") 'cider-datomic-list-databases)
+    (define-key map (kbd "l") 'cider-datomic-list-clients)
     map)
   "The Cider Datomic databases mode key map.")
 
@@ -368,7 +393,7 @@
    client (lambda (response)
             (nrepl-dbind-response response (status)
               (cond ((member "done" status)
-                     (pop-to-buffer "*Datomic Databases*" nil)
+                     (pop-to-buffer-same-window "*Datomic Databases*")
                      (cider-datomic-databases-mode)
                      (setq tabulated-list-entries
                            (seq-map (lambda (database)
