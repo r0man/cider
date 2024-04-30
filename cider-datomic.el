@@ -28,6 +28,7 @@
 
 ;;; Code:
 
+(require 'cider-client)
 (require 'cl-lib)
 (require 'eieio)
 (require 'nrepl-dict)
