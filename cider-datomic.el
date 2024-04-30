@@ -31,23 +31,24 @@
 (require 'cider-client)
 (require 'cl-lib)
 (require 'eieio)
+(require 'ht)
 (require 'nrepl-dict)
 (require 'seq)
 (require 'transient)
 
-(defcustom cider-datomic-client-server-type :datomic-local
+(defcustom cider-datomic-client-server-type "datomic-local"
   "The Datomic client server type."
   :group 'cider-datomic
   :package-version '(cider . "1.13.2")
-  :safe #'symbolp
-  :type 'symbol)
+  :safe #'stringp
+  :type 'string)
 
-(defcustom cider-datomic-client-storage-directory :mem
+(defcustom cider-datomic-client-storage-dir "mem"
   "The Datomic client storage directory."
   :group 'cider-datomic
   :package-version '(cider . "1.13.2")
-  :safe #'symbolp
-  :type 'symbol)
+  :safe #'stringp
+  :type 'string)
 
 (defcustom cider-datomic-client-system nil
   "The Datomic client system."
@@ -85,7 +86,7 @@
   :type 'string)
 
 (defvar cider-datomic-client-server-types
-  '(:cloud :datomic-local :peer-server)
+  '("cloud" "datomic-local" "peer-server")
   "The list of Datomic query content types.")
 
 ;; Classes
@@ -94,19 +95,60 @@
   ((server-type
     :documentation "The coding system to use for the media type."
     :initarg :server-type
-    :initform :datomic-local
-    :type symbol)
-   (storage-directory
+    :initform "datomic-local"
+    :type string)
+   (storage-dir
     :documentation "The coding system to use for the media type."
-    :initarg :storage-directory
-    :initform :mem
-    :type symbol)
+    :initarg :storage-dir
+    :initform "mem"
+    :type string)
    (system
     :documentation "The system to use for the media type."
     :initarg :system
-    :initform nil
+    :initform "default"
     :type (or null string)))
   "A class representing a Datomic client.")
+
+;; Attribute
+
+(defclass cider-datomic-ident-object ()
+  ((ident
+    :accessor cider-datomic-ident
+    :documentation "The Datomic identifier."
+    :initarg :ident
+    :type symbol)))
+
+(defclass cider-datomic-attribute (cider-datomic-ident-object)
+  ((cardinality
+    :accessor cider-datomic-attribute-cardinality
+    :documentation "The cardinality of the attribute."
+    :initarg :cardinality
+    :type symbol)
+   (doc
+    :accessor cider-datomic-attribute-doc
+    :documentation "The documentation of the attribute."
+    :initarg :doc
+    :type string)
+   (type
+    :accessor cider-datomic-attribute-type
+    :documentation "The data type of the attribute."
+    :initarg :type
+    :type symbol)
+   (unique
+    :accessor cider-datomic-attribute-unique
+    :documentation "The data unique of the attribute."
+    :initarg :unique
+    :unique symbol)))
+
+(defun cider-datomic-attribute-name (attribute)
+  "Return the name of the ATTRIBUTE."
+  (with-slots (ident) attribute
+    (format "%s" ident)))
+
+(defun cider-datomic-attribute-namespace (attribute)
+  "Return the namespace of the ATTRIBUTE."
+  (with-slots (ident) attribute
+    (seq-first (cider-datomic--split-symbol ident))))
 
 ;; Schema
 
@@ -123,12 +165,13 @@
 (defun cider-datomic-schema--result-to-attribute (result)
   "Convert the a Datomic query RESULT into a schema."
   (seq-let [ident type cardinality doc unique] result
-    (datomic-attribute :cardinality cardinality
-                       :doc doc
-                       :ident ident
-                       :type type
-                       :unique (when (hash-table-p unique)
-                                 (ht-get* unique :db/unique :db/ident)))))
+    (cider-datomic-attribute
+     :cardinality cardinality
+     :doc doc
+     :ident ident
+     :type type
+     :unique (when (hash-table-p unique)
+               (ht-get* unique :db/unique :db/ident)))))
 
 (defun cider-datomic-schema--results-to-schema (results)
   "Convert the a Datomic query RESULTS into a schema."
@@ -148,12 +191,24 @@
           [\?ident :db/doc \?doc])
   "The Datomic query to load the schema.")
 
+;; Helper
+
+(defun cider-datomic--split-symbol (symbol)
+  "Split the SYMBOL into a list with NAMESPACE and NAME, or NIL."
+  (seq-let [namespace name] (split-string (format "%s" symbol) "/" t)
+    (cond ((and namespace (null name))
+           (list nil (string-trim-left namespace ":")))
+          ((and namespace name (equal ":" (substring namespace 0 1)))
+           (list (string-trim-left namespace ":") name))
+          ((and namespace name)
+           (list namespace name)))))
+
 ;; NREPL
 
 (defun cider-request:datomic-create-database (client db-name &optional callback)
   "Create the Datomic database DB-NAME using CLIENT and invoke CALLBACK."
-  (cider-ensure-op-supported "cider.datomic/create-databases")
-  (thread-first `("op" "cider.datomic/list-databases"
+  (cider-ensure-op-supported "cider.datomic/create-database")
+  (thread-first `("op" "cider.datomic/list-database"
                   "cider.datomic/client" ,(cider-datomic-client-transform-value client)
                   "cider.datomic/db-name" ,db-name)
                 (cider-nrepl-send-request callback)))
@@ -195,17 +250,42 @@
                                               (parseedn-print-str tx-data)))
                 (cider-nrepl-send-request callback)))
 
+(defun cider-sync-request:datomic-list-databases (client)
+  "List the Datomic database using CLIENT and invoke CALLBACK."
+  (cider-ensure-op-supported "cider.datomic/list-databases")
+  (thread-first `("op" "cider.datomic/list-databases"
+                  "cider.datomic/client" ,(cider-datomic-client-transform-value client))
+                (cider-nrepl-send-sync-request)))
+
 (defun cider-datomic-client-apply ()
   (interactive))
 
 (defun cider-datomic-current-client ()
-  (cider-datomic-client :system "foo"))
+  (cider-datomic-client))
 
 (defun cider-datomic--do-create-database (client name)
   "Create a database for CLIENT with NAME."
   (interactive (list (cider-datomic-current-client)
                      (read-string "Database name: ")))
-  (cider-request:datomic-create-database client name))
+  (cider-request:datomic-create-database
+   client name (lambda (response)
+                 (nrepl-dbind-response response (status)
+                   (cond ((member "done" status)
+                          (message "Database created.")))))))
+
+(defun cider-datomic-delete-database (client name)
+  "Delete the database NAME using CLIENT."
+  (interactive (list (cider-datomic-current-client)
+                     (read-string "Database name: ")))
+  (cider-request:datomic-delete-database
+   client name (lambda (response)
+                 (nrepl-dbind-response response (status)
+                   (cond ((member "done" status)
+                          (message "Database deleted.")))))))
+
+(defun cider-datomic-read-database (client)
+  "Delete the database NAME using CLIENT."
+  (cider-sync-request:datomic-list-databases client))
 
 (define-derived-mode cider-datomic-databases-mode tabulated-list-mode "Cider Datomic Databases" "Major mode to list Datomic databases"
   (setq tabulated-list-format [("Name" 12 t)
@@ -225,12 +305,12 @@
              (cider-datomic-databases-mode)
              (setq tabulated-list-entries
                    (seq-map (lambda (entry)
-                              (with-slots (server-type storage-directory) client
+                              (with-slots (server-type storage-dir) client
                                 (list (format "%s" entry)
                                       (vector
                                        (format "%s" entry)
                                        (format "%s" server-type)
-                                       (format "%s" storage-directory)))))
+                                       (format "%s" storage-dir)))))
                             (nrepl-dict-get response "cider.datomic/list-databases")))
              (tabulated-list-print t))))))
 
@@ -248,8 +328,8 @@
   :description "Server type"
   :key "=t")
 
-(transient-define-argument cider-datomic--client-storage-directory-option ()
-  :argument "--storage-directory="
+(transient-define-argument cider-datomic--client-storage-dir-option ()
+  :argument "--storage-dir="
   :choices cider-datomic-client-server-types
   :class 'transient-option
   :description "Storage directory"
@@ -295,7 +375,7 @@
   :history-key 'cider-datomic-client
   ["Cider Datomic\n\nClient:"
    (cider-datomic--client-server-type-option)
-   (cider-datomic--client-storage-directory-option)
+   (cider-datomic--client-storage-dir-option)
    (cider-datomic--client-system-option)
    (cider-datomic--client-region-option)
    (cider-datomic--client-endpoint-option)
@@ -303,6 +383,7 @@
    (cider-datomic--client-validate-hostnames-option)]
   ["Actions"
    ("c" "Create database" cider-datomic--do-create-database)
+   ("k" "Delete database" cider-datomic--do-delete-database)
    ("l" "List databases" cider-datomic-list-databases)])
 
 ;; Major mode
@@ -340,12 +421,12 @@ the CIDER Inspector and the CIDER stacktrace mode.
 
 (defun cider-datomic-client-transform-value (client)
   "Transform CLIENT into a list of properties."
-  (with-slots (server-type storage-directory system) client
+  (with-slots (server-type storage-dir system) client
     (let ((value (nrepl-dict)))
       (when server-type
-        (nrepl-dict-put value  "server-type" (symbol-name server-type)))
-      (when storage-directory
-        (nrepl-dict-put value "storage-directory" (symbol-name storage-directory)))
+        (nrepl-dict-put value  "server-type" server-type))
+      (when storage-dir
+        (nrepl-dict-put value "storage-dir" storage-dir))
       (when system
         (nrepl-dict-put value "system" system))
       value)))
@@ -353,3 +434,13 @@ the CIDER Inspector and the CIDER stacktrace mode.
 (provide 'cider-datomic)
 
 ;;; cider-datomic.el ends here
+
+;; (cider-request:datomic-query
+;;  (cider-datomic-current-client)
+;;  "foo" cider-datomic-schema--load-query
+;;  (lambda (result)
+;;    (setq my-result result)))
+
+;; (cider-sync-request:datomic-list-databases (cider-datomic-current-client))
+
+;; (cider-datomic-read-database (cider-datomic-current-client))
