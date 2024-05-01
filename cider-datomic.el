@@ -358,17 +358,29 @@
   (push (cider-datomic-read-client) cider-datomic-clients)
   (cider-datomic-list-clients))
 
+(defun cider-datomic-delete-client ()
+  "Create a new Datomic client."
+  (interactive)
+  (let ((client (tabulated-list-get-id)))
+    (when (and (cl-typep client 'cider-datomic-client)
+               (yes-or-no-p "Delete client? "))
+      (setq cider-datomic-clients (seq-remove (lambda (c) (eq c client))
+                                              cider-datomic-clients))
+      (cider-datomic-list-clients))))
+
 (defvar cider-datomic-clients-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
     (define-key map (kbd "RET") #'cider-datomic-client-enter)
-    (define-key map (kbd "c") 'cider-datomic-create-client)
-    (define-key map (kbd "g") 'cider-datomic-list-clients)
+    (define-key map (kbd "c") #'cider-datomic-create-client)
+    (define-key map (kbd "d") #'cider-datomic-delete-client)
+    (define-key map (kbd "g") #'cider-datomic-list-clients)
     map)
   "The Cider Datomic clients mode key map.")
 
 (define-derived-mode cider-datomic-clients-mode
-  tabulated-list-mode "Datomic Clients" "Major mode to list Datomic clients."
+  tabulated-list-mode "Datomic Clients"
+  "Major mode to list Datomic clients."
   (setq tabulated-list-format cider-datomic-client-tabulated-list-format)
   (setq tabulated-list-padding 2)
   (tabulated-list-init-header))
@@ -403,15 +415,16 @@
 (defvar cider-datomic-databases-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
-    (define-key map (kbd "c") 'cider-datomic-create-database)
-    (define-key map (kbd "d") 'cider-datomic-delete-database)
-    (define-key map (kbd "g") 'cider-datomic-list-databases)
-    (define-key map (kbd "l") 'cider-datomic-list-clients)
+    (define-key map (kbd "c") #'cider-datomic-create-database)
+    (define-key map (kbd "d") #'cider-datomic-delete-database)
+    (define-key map (kbd "g") #'cider-datomic-list-databases)
+    (define-key map (kbd "l") #'cider-datomic-list-clients)
     map)
   "The Cider Datomic databases mode key map.")
 
 (define-derived-mode cider-datomic-databases-mode
-  tabulated-list-mode "Datomic Databases" "Major mode to list Datomic databases."
+  tabulated-list-mode "Datomic Databases"
+  "Major mode to list Datomic databases."
   (setq tabulated-list-format cider-datomic-database-tabulated-list-format)
   (setq tabulated-list-padding 2)
   (tabulated-list-init-header))
